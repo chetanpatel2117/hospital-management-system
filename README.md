@@ -13,7 +13,6 @@ A modern **Hospital Management System (HMS)** developed to simplify hospital ope
 * Manage Doctors
 * Manage Patients
 * Manage Staff
-* Manage Departments
 * Appointment Management
 * Billing & Payments
 * Laboratory Management
@@ -29,15 +28,6 @@ A modern **Hospital Management System (HMS)** developed to simplify hospital ope
 * Prescribe Medicines
 * View Medical History
 
-### 👤 Patient Module
-
-* Patient Registration & Login
-* Book Appointments
-* View Medical Records
-* Download Lab Reports
-* View Prescriptions
-* Billing History
-
 ### 🧪 Laboratory Module
 
 * Manage Lab Tests
@@ -50,92 +40,35 @@ A modern **Hospital Management System (HMS)** developed to simplify hospital ope
 * Medicine Stock Management
 * Prescription Verification
 
----
-
 ## 🚀 Technologies Used
 
 ### Frontend
 
-* HTML5
-* CSS3
+* HTML
+* CSS
 * Tailwind CSS
 * JavaScript
 
 ### Backend
 
-* PHP
+* node.js
+* express.js
 
 ### Database
 
-* MySQL
+* mongoDB
 
 ### Tools
 
-* XAMPP
 * Git & GitHub
 * VS Code
 
----
-
-## 📂 Project Structure
-
-```
-Hospital-Management-System/
-│
-├── admin/
-├── doctor/
-├── patient/
-├── laboratory/
-├── pharmacy/
-├── assets/
-│   ├── css/
-│   ├── js/
-│   └── images/
-├── database/
-│   └── hospital.sql
-├── includes/
-├── uploads/
-├── index.php
-├── login.php
-├── dashboard.php
-└── README.md
-```
-
----
-
-## ⚙️ Installation
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/hospital-management-system.git
-```
-
-2. Move the project to the **htdocs** folder (XAMPP).
-
-3. Start **Apache** and **MySQL** from XAMPP.
-
-4. Import the database
-
-* Open phpMyAdmin
-* Create a database named `hospital_management`
-* Import the `hospital.sql` file
-
-5. Open your browser
-
-```
-http://localhost/hospital-management-system
-```
-
----
 
 ## 🔐 Default Login (Example)
 
 | Role    | Email                                             | Password   |
 | ------- | ------------------------------------------------- | ---------- |
 | Admin   | [admin@example.com](mailto:admin@example.com)     | admin123   |
-| Doctor  | [doctor@example.com](mailto:doctor@example.com)   | doctor123  |
-| Patient | [patient@example.com](mailto:patient@example.com) | patient123 |
 
 > Update these credentials according to your project.
 
@@ -146,24 +79,36 @@ http://localhost/hospital-management-system
 Add screenshots of:
 
 * Login Page
+  <img width="938" height="473" alt="image" src="https://github.com/user-attachments/assets/00a18715-0060-4f60-a7e4-18fc02796478" />
+
 * Admin Dashboard
+  <img width="948" height="470" alt="image" src="https://github.com/user-attachments/assets/5a3a9440-0867-4aba-807d-e8408f313393" />
+
 * Patient Dashboard
+<img width="953" height="466" alt="image" src="https://github.com/user-attachments/assets/c2825f6c-fa2f-4168-ae69-cfe69676012e" />
+
 * Doctor Dashboard
+
+<img width="956" height="465" alt="image" src="https://github.com/user-attachments/assets/046e88a4-cc35-4c99-80f5-4efdb8283405" />
+
 * Appointment Module
+
+  <img width="956" height="470" alt="image" src="https://github.com/user-attachments/assets/fb6a4a36-a149-438c-b20c-8453650e2817" />
+
 * Laboratory Module
+
+  <img width="942" height="477" alt="image" src="https://github.com/user-attachments/assets/70b5a4f0-4af9-410c-8b09-3f358a383012" />
+
 * Billing Module
+![Uploading image.png…]()
 
 ---
 
 ## 🎯 Future Enhancements
 
-* Online Video Consultation
-* AI-based Disease Prediction
 * Online Payment Gateway
 * Email Notifications
 * SMS Alerts
-* Mobile Application
-* Multi-language Support
 
 ---
 
@@ -177,20 +122,14 @@ Contributions are welcome!
 4. Push to your branch.
 5. Open a Pull Request.
 
----
 
-## 📄 License
-
-This project is developed for educational purposes. You are free to use and modify it for learning.
-
----
 
 ## 👨‍💻 Developer
 
-**Chetan**
+**Chetan patel**
 
-* Final Year B.A.
-* Shree Mahila Arts College, Surat
+* Final Year BE/CSE.
+* S N patel institute of tech College, bardoli
 * Gujarat, India
 
 ---
