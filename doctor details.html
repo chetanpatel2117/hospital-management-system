@@ -1,245 +1,232 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hospital Management Dashboard</title>
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #e3f2fd, #e0f7fa);
-      color: #333;
-    }
+	<title>MediCare Dashboard</title>
 
-    header {
-      background: linear-gradient(to right, #0077b6, #00b4d8);
-      color: #fff;
-      height: 60px;
-      width: 98%;
-      padding: 0 20px;
-      font-size: 26px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 999;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    .logout a {
-      font-size: 18px;
-      color: #ff4d4d;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: 0.3s;
-      background-color: #fff;
-      font-weight: bold;
-    }
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
-    .logout a:hover {
-      color: white;
-      background-color: #ff4d4d;
-    }
+	<style>
+	body{
+	background:#f5f7fb;
+	font-family:'Segoe UI',sans-serif;
+	}
+	.card {
+	background: #fff;
+	border-radius: 1rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e2e8f0;
+	}
+	/* hide scrollbar visuals while keeping scroll functionality */
+	.no-scrollbar{
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+	.no-scrollbar::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera */
+	}
+	</style>
+	</head>
 
-    nav {
-      width: 220px;
-      height: 100vh;
-      position: fixed;
-      top: 60px; /* start after header */
-      left: 0;
-      background: linear-gradient(to bottom, #001f54, #003580);
-      padding-top: 20px;
-      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
-      animation: slideInLeft 0.7s ease-out;
-    }
+	<body>
 
-    nav ul {
-      list-style-type: none;
-      padding: 0;
-    }
+	<div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none md:hidden transition-opacity duration-300 z-20"></div>
 
-    nav ul li {
-      margin: 20px 0;
-    }
+	<div class="flex min-h-screen">
 
-    nav ul li a {
-      color: #fff;
-      text-decoration: none;
-      padding: 12px 20px;
-      display: block;
-      border-radius: 8px;
-      transition: background 0.3s;
-      font-weight: 500;
-    }
+	<!-- SIDEBAR -->
+	<div id="sidebar" class="w-64 bg-gradient-to-b from-blue-900 to-blue-700 text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
 
-    nav ul li a:hover {
-      background-color: #00b4d8;
-    }
+	<div class="p-6 border-b border-blue-600">
+	<div class="flex items-center gap-3">
+	<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-700">
+	<i class="fa-solid fa-plus text-xl"></i>
+	</div>
 
-    main {
-      margin-left: 240px;
-      padding: 90px 30px 60px; /* top padding includes header height */
-      min-height: calc(100vh - 60px);
-    }
+	<div>
+	<h2 class="text-3xl font-bold">MediCare</h2>
+	<p class="text-xs text-blue-100">Hospital Management</p>
+	</div>
+	</div>
+	</div>
 
-    .dashboard-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 25px;
-    }
+	<nav class="mt-6 px-4 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
 
-    .card {
-      background: linear-gradient(to top left, #ffffff, #e0f7fa);
-      padding: 25px;
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      cursor: pointer;
-      animation: fadeIn 0.8s ease-out;
-      animation-fill-mode: both;
-    }
+	<a class="flex items-center gap-3  rounded-xl px-4 py-3" href="dashboard.html">
+	<i class="fa-solid fa-house"></i> Dashboard
+	</a>
 
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-      background: linear-gradient(to top left, #d0f0f7, #b2ebf2);
-      animation: pulse 1.5s infinite;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="patient details.html">
+	<i class="fa-solid fa-user-group"></i> Patients
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="emergancy case.html">
+	<i class="fa-solid fa-ambulance"></i> Emergency
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 bg-blue-500 rounded-xl" href="doctor details.html">
+	<i class="fa-solid fa-user-doctor"></i> Doctors
+	</a>
 
-    .card h3 {
-      margin-bottom: 10px;
-      color: #0077b6;
-      font-size: 22px;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="appointment details.html">
+	<i class="fa-solid fa-calendar-days"></i> Appointments
+	</a>
+<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="ICU details.html">
+	<i class="fa-solid fa-bed"></i>ICU details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="room details.html">
+	<i class="fa-solid fa-bed"></i>Room details
+	</a>
 
-    .card p {
-      font-size: 22px;
-      font-weight: bold;
-      color: #004d61;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="billing.html">
+	<i class="fa-solid fa-file-invoice-dollar"></i> Billing
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="pharmacy.html">
+	<i class="fa-solid fa-capsules"></i> Pharmacy
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="laboratory.html">
+	<i class="fa-solid fa-flask"></i> Laboratory
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="report details.html">
+	<i class="fa-solid fa-chart-column"></i> Reports
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="staff details.html">
+	<i class="fa-solid fa-people-line"></i> Staff details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="settings.html">
+	<i class="fa-solid fa-gear"></i> Settings
+	</a>
+
+	</nav>
+
+	<button type="button" data-logout class="mt-auto flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl w-full text-left">
+	<i class="fa-solid fa-power-off"></i> Logout
+	</button>
+
+	</div>
 
 
-    h3{
-    margin-left: 220px;
-}
-table {
-    width: 80%;
-    border-collapse: collapse;
-    margin-top:0px;
-    margin-left: 220px;
-}
-table th, table td {
-    border: 1px solid #ced4da;
-    padding: 10px;
-    text-align: center;
+	<!-- MAIN -->
+	<div class="flex-1 relative overflow-auto">
 
-}
-table th {
-    background: #007bff;
-    color: white;
-}
-    footer {
-      text-align: center;
-      padding: 12px;
-      background-color: #004aad;
-      color: #fff;
-      position: fixed;
-      bottom: 0;
-      left: 240px;
-      width: calc(100% - 240px);
-      font-size: 14px;
-    }
+	<!-- TOPBAR -->
+	<div class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
 
-    /* --- Animations --- */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+	<div class="flex items-center gap-4 flex-1">
+	<button id="sidebarToggle" class="text-slate-700 md:hidden p-2 rounded-xl hover:bg-slate-100">
+	<i class="fa-solid fa-bars text-xl"></i>
+	</button>
+	<div class="space-y-1">
+	<h1 class="text-4xl font-bold text-slate-800">Doctor Details</h1>
+	</div>
+	</div>
 
-    @keyframes slideInLeft {
-      from { transform: translateX(-100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+	  <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            </button>
+            <div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Notifications</h3>
+                <span class="text-xs text-blue-600">3 new</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+                <div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+                <div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-message text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+            </button>
+            <div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Messages</h3>
+                <span class="text-xs text-blue-600">2 unread</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+                <div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+              </div>
+            </div>
+          </div>
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(0, 180, 216, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0); }
-    }
-  </style>
-</head>
-<body>
+	<div class="flex items-center gap-3">
+	<img src="assets/image/profile.png" class="w-12 h-12 rounded-full">
+	<div>
+	<h4 id="profileName" class="font-semibold" data-profile-name></h4>
+	<p id="profileRole" class="text-sm text-slate-500" data-profile-role></p>
+	</div>
+	</div>
+	</div>
+	</div>
 
-<header>
-  Hospital Management System
-  <div class="logout">
-    <a href="login page.html">Logout</a>
+
+<!-- doctor details -->
+<main class="pt-28 p-6 md:p-13 md:ml-64">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900">Doctor Details</h1>
+        <p class="text-sm text-slate-500">Manage your medical staff and view doctor profiles.</p>
+      </div>
+      <button class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300">
+        <i class="fa-solid fa-plus"></i>
+        Add Doctor
+      </button>
+    </div>
+
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+        <div class="relative w-full md:w-1/2">
+          <label class="sr-only" for="doctorSearch">Search Doctor</label>
+          <input id="doctorSearch" type="search" placeholder="Search by name, ID or specialty..." class="w-full bg-slate-100 rounded-3xl border border-slate-200 px-4 py-3 pr-12 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+          <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        </div>
+        <div class="text-sm text-slate-500">Showing all doctors in the system.</div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-100">
+            <tr>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Doctor ID</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Name</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Specialty</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Contact</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Email</th>
+              <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700">Status</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <tr>
+              <td class="px-6 py-4 text-sm text-slate-600 font-medium">D001</td>
+              <td class="px-6 py-4 text-sm text-slate-600">Vijay Patel</td>
+              <td class="px-6 py-4 text-sm text-slate-600">Cardiology</td>
+              <td class="px-6 py-4 text-sm text-slate-600">+91 9876543210</td>
+              <td class="px-6 py-4 text-sm text-blue-500 hover:underline"><a href="mailto:vijay.patel@hospital.com">vijay.patel@hospital.com</a></td>
+              <td class="px-6 py-4 text-sm font-semibold text-green-600">Present</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-</header>
-
-<nav>
-  <ul>
-    <li><a href="dashboard.html">Dashboard</a></li>
-    <li><a href="check up patient.html">Check Up Patient</a></li>
-    <li><a href="add emergancy case.html">Add Emergency Case</a></li>
-    <li><a href="admit patient.html">Patient Admit</a></li>
-    <li><a href="appointments.html">Appointments</a></li>
-    <li><a href="bill pay.html">Bill Pay</a></li>
-    <li><a href="my profile.html">My Profile</a></li>
-   
-  </ul>
-</nav>
-<h3>Doctor List:</h3>
-<table id="doctorTable">
-    <thead>
-        <tr>
-            <th>Doctor ID</th>
-            <th>Doctor Name</th>
-            <th>Specialization</th>
-            <th>Contact Number</th>
-            <th>Working Hours</th>
-            <th>Room No</th>
-            <th>status</th>
-        </tr>
-    </thead>
-</body>
-</html> 
-<script>
-  // Sample data for the doctor table
-  const doctors = [
-    { id: 'D001', name: 'Dr. John Doe', specialization: 'Cardiology', contact: '123-456-7890', hours: '9 AM - 5 PM', room: '101', status: 'Available' },
-    { id: 'D002', name: 'Dr. Jane Smith', specialization: 'Neurology', contact: '987-654-3210', hours: '10 AM - 6 PM', room: '102', status: 'Unavailable' },
-    { id: 'D003', name: 'Dr. Emily Johnson', specialization: 'Pediatrics', contact: '555-123-4567', hours: '8 AM - 4 PM', room: '103', status: 'Available' }
-  ];
-
-  // Function to populate the doctor table
-  function populateDoctorTable() {
-    const table = document.getElementById('doctorTable');
-    const tbody = document.createElement('tbody');
-
-    doctors.forEach(doctor => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${doctor.id}</td>
-        <td>${doctor.name}</td>
-        <td>${doctor.specialization}</td>
-        <td>${doctor.contact}</td>
-        <td>${doctor.hours}</td>
-        <td>${doctor.room}</td>
-        <td>${doctor.status}</td>
-      `;
-      tbody.appendChild(row);
-    });
-
-    table.appendChild(tbody);
-  }
-
-  // Call the function to populate the table on page load
-  window.onload = populateDoctorTable;
+</main>
+</div>
+<script src="assets/js/auth.js">
+	
 </script>
+</body>
+</html>

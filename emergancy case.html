@@ -1,301 +1,339 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hospital Management Dashboard</title>
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #e3f2fd, #e0f7fa);
-      color: #333;
-    }
+	<title>MediCare Dashboard</title>
 
-    header {
-      background: linear-gradient(to right, #0077b6, #00b4d8);
-      color: #fff;
-      height: 60px;
-      width: 98%;
-      padding: 0 20px;
-      font-size: 26px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 999;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    .logout a {
-      font-size: 18px;
-      color: #ff4d4d;
-      text-decoration: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      transition: 0.3s;
-      background-color: #fff;
-      font-weight: bold;
-    }
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 
-    .logout a:hover {
-      color: white;
-      background-color: #ff4d4d;
-    }
+	<style>
+	body{
+	background:#f5f7fb;
+	font-family:'Segoe UI',sans-serif;
+	}
+	.card {
+	background: #fff;
+	border-radius: 1rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e2e8f0;
+	}
+	/* hide scrollbar visuals while keeping scroll functionality */
+	.no-scrollbar{
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+	.no-scrollbar::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera */
+	}
+	</style>
+	</head>
 
-    nav {
-      width: 220px;
-      height: 100vh;
-      position: fixed;
-      top: 60px; /* start after header */
-      left: 0;
-      background: linear-gradient(to bottom, #001f54, #003580);
-      padding-top: 20px;
-      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
-      animation: slideInLeft 0.7s ease-out;
-    }
+	<body>
 
-    nav ul {
-      list-style-type: none;
-      padding: 0;
-    }
+	<div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none md:hidden transition-opacity duration-300 z-20"></div>
 
-    nav ul li {
-      margin: 20px 0;
-    }
+	<div class="flex min-h-screen">
 
-    nav ul li a {
-      color: #fff;
-      text-decoration: none;
-      padding: 12px 20px;
-      display: block;
-      border-radius: 8px;
-      transition: background 0.3s;
-      font-weight: 500;
-    }
+	<!-- SIDEBAR -->
+	<div id="sidebar" class="w-64 bg-gradient-to-b from-blue-900 to-blue-700 text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
 
-    nav ul li a:hover {
-      background-color: #00b4d8;
-    }
+	<div class="p-6 border-b border-blue-600">
+	<div class="flex items-center gap-3">
+	<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-700">
+	<i class="fa-solid fa-plus text-xl"></i>
+	</div>
 
-    main {
-      margin-left: 240px;
-      padding: 90px 30px 60px; /* top padding includes header height */
-      min-height: calc(100vh - 60px);
-    }
+	<div>
+	<h2 class="text-3xl font-bold">MediCare</h2>
+	<p class="text-xs text-blue-100">Hospital Management</p>
+	</div>
+	</div>
+	</div>
 
-    .dashboard-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 25px;
-    }
+	<nav class="mt-6 px-4 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
 
-    .card {
-      background: linear-gradient(to top left, #ffffff, #e0f7fa);
-      padding: 25px;
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      cursor: pointer;
-      animation: fadeIn 0.8s ease-out;
-      animation-fill-mode: both;
-    }
+	<a class="flex items-center gap-3  rounded-xl px-4 py-3" href="dashboard.html">
+	<i class="fa-solid fa-house"></i> Dashboard
+	</a>
 
-    .card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-      background: linear-gradient(to top left, #d0f0f7, #b2ebf2);
-      animation: pulse 1.5s infinite;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="patient details.html">
+	<i class="fa-solid fa-user-group"></i> Patients
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 bg-blue-500 rounded-xl" href="emergancy case.html">
+	<i class="fa-solid fa-ambulance"></i> Emergency
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="doctor details.html">
+	<i class="fa-solid fa-user-doctor"></i> Doctors
+	</a>
 
-    .card h3 {
-      margin-bottom: 10px;
-      color: #0077b6;
-      font-size: 22px;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="appointment details.html">
+	<i class="fa-solid fa-calendar-days"></i> Appointments
+	</a>
+<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="ICU details.html">
+	<i class="fa-solid fa-bed"></i>ICU details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="room details.html">
+	<i class="fa-solid fa-bed"></i>Room details
+	</a>
 
-    .card p {
-      font-size: 22px;
-      font-weight: bold;
-      color: #004d61;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="billing.html">
+	<i class="fa-solid fa-file-invoice-dollar"></i> Billing
+	</a>
 
-    h2{
-    margin-left: 220px;
-}
-table {
-    width: 80%;
-    border-collapse: collapse;
-    margin-top:0px;
-    margin-left: 220px;
-}
-table th, table td {
-    border: 1px solid #ced4da;
-    padding: 10px;
-    text-align: center;
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="pharmacy.html">
+	<i class="fa-solid fa-capsules"></i> Pharmacy
+	</a>
 
-}
-table th {
-    background: #fc4848;
-    color: white;
-}
-    footer {
-      text-align: center;
-      padding: 12px;
-      background-color: #004aad;
-      color: #fff;
-      position: fixed;
-      bottom: 0;
-      left: 240px;
-      width: calc(100% - 240px);
-      font-size: 14px;
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="laboratory.html">
+	<i class="fa-solid fa-flask"></i> Laboratory
+	</a>
 
-    /* --- Animations --- */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="report details.html">
+	<i class="fa-solid fa-chart-column"></i> Reports
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="staff details.html">
+	<i class="fa-solid fa-people-line"></i> Staff details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="settings.html">
+	<i class="fa-solid fa-gear"></i> Settings
+	</a>
 
-    @keyframes slideInLeft {
-      from { transform: translateX(-100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+	</nav>
 
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0.4); }
-      70% { box-shadow: 0 0 0 10px rgba(0, 180, 216, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(0, 180, 216, 0); }
-    }
-  </style>
-</head>
-<body>
+	<button type="button" data-logout class="mt-auto flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl w-full text-left">
+	<i class="fa-solid fa-power-off"></i> Logout
+	</button>
 
-<header>
-  Hospital Management System
-  <div class="logout">
-    <a href="login page.html">Logout</a>
+	</div>
+
+
+	<!-- MAIN -->
+	<div class="flex-1 relative overflow-auto">
+
+	<!-- TOPBAR -->
+	<div class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
+
+	<div class="flex items-center gap-4 flex-1">
+	<button id="sidebarToggle" class="text-slate-700 md:hidden p-2 rounded-xl hover:bg-slate-100">
+	<i class="fa-solid fa-bars text-xl"></i>
+	</button>
+	<div class="space-y-1">
+	<h1 class="text-4xl font-bold text-slate-800">Emergency Cases</h1>
+	</div>
+	</div>
+  <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            </button>
+            <div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Notifications</h3>
+                <span class="text-xs text-blue-600">3 new</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+                <div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+                <div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-message text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+            </button>
+            <div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Messages</h3>
+                <span class="text-xs text-blue-600">2 unread</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+                <div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+              </div>
+            </div>
+          </div>
+	<div class="flex items-center gap-3">
+	<img src="assets/image/profile.png" class="w-12 h-12 rounded-full">
+	<div>
+	<h4 id="profileName" class="font-semibold" data-profile-name></h4>
+	<p id="profileRole" class="text-sm text-slate-500" data-profile-role></p>
+	</div>
+	</div>
+	</div>
+	</div>
+
+
+  <main class="p-6 md:p-8 mt-20 md:ml-64">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Emergency Cases</h2>
+          <p class="text-sm text-slate-500">Capture urgent incidents and assign rooms immediately.</p>
+        </div>
+        <button id="addEmergencyBtn" type="button" class="inline-flex items-center gap-2 bg-red-600 text-white py-3 px-5 rounded-full font-semibold shadow-lg hover:bg-red-700 transition-colors duration-300">
+          <i class="fa-solid fa-plus"></i>
+          Add Emergency Case
+        </button>
+      </div>
+
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Case ID</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Patient Name</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Room Number</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Contact Number</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Emergency Type</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Condition Level</th>
+                <th class="text-left px-6 py-4 text-sm font-semibold text-slate-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="emergencyTableBody" class="bg-white divide-y divide-slate-200">
+              <tr data-empty-row>
+                <td colspan="7" class="px-6 py-10 text-center text-sm text-slate-500">No emergency cases yet. Click "Add Emergency Case" to begin.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="emergencyModal" class="hidden fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">Add Emergency Case</h2>
+          <p class="text-sm text-slate-500">Fill in the urgent case details below.</p>
+        </div>
+        <button id="closeEmergencyForm" class="text-slate-500 hover:text-slate-700">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="emergencyForm" class="space-y-5">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="caseId">Case ID</label>
+            <input id="caseId" name="caseId" type="text" readonly class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-slate-100 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="patientName">Patient Name</label>
+            <input id="patientName" name="patientName" type="text" class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="roomNumber">Room Number</label>
+            <input id="roomNumber" name="roomNumber" list="availableRooms" type="text" class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" required>
+            <datalist id="availableRooms">
+              <option value="101"></option>
+              <option value="102"></option>
+              <option value="103"></option>
+              <option value="104"></option>
+              <option value="105"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="contactNumber">Contact Number</label>
+            <input id="contactNumber" name="contactNumber" type="tel" class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="emergencyType">Emergency Type</label>
+            <input id="emergencyType" name="emergencyType" type="text" class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-600 mb-2" for="conditionLevel">Condition Level</label>
+            <select id="conditionLevel" name="conditionLevel" class="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" required>
+              <option value="" disabled selected>Select condition</option>
+              <option>Critical</option>
+              <option>Serious</option>
+              <option>Stable</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 md:flex-row md:justify-end">
+          <button type="button" id="cancelEmergency" class="w-full md:w-auto px-5 py-3 rounded-2xl border border-slate-300 text-slate-700 hover:bg-slate-100">Cancel</button>
+          <button type="submit" class="w-full md:w-auto px-5 py-3 rounded-2xl bg-blue-600 text-white hover:bg-blue-700">Add Case</button>
+        </div>
+      </form>
+    </div>
   </div>
-</header>
+</main>
 
-<nav>
-  <ul>
-    <li><a href="dashboard.html">Dashboard</a></li>
-    <li><a href="check up patient.html">Check Up Patient</a></li>
-    <li><a href="add emergancy case.html">Add Emergency Case</a></li>
-    <li><a href="admit patient.html">Patient Admit</a></li>
-    <li><a href="appointments.html">Appointments</a></li>
-    <li><a href="bill pay.html">Bill Pay</a></li>
-    <li><a href="my profile.html">My Profile</a></li>
-   
-  </ul>
-</nav>
-<div class="container">
-    <h2>Emergency Case Details</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Case ID</th>
-                <th>Patient Name</th>
-                <th>Contact No</th>
-                <th>Emergency Type</th>
-                <th>condition</th>
-            </tr>
-        </thead>
-    </table>
-</div>
 <script>
-  window.onload = function () {
-    // Display emergency case data in table
-    let emergencyCases;
-    try {
-      emergencyCases = JSON.parse(localStorage.getItem("emergencyCases")) || [];
-    } catch (error) {
-      console.error("Error parsing emergencyCases from localStorage:", error);
-      emergencyCases = [];
-    }
-    const tableBody = document.createElement("tbody");
-    tableBody.id = "emergencycase-body";
-    document.querySelector("table").appendChild(tableBody);
+document.addEventListener('DOMContentLoaded', () => {
+  // Sidebar toggle functionality
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebar = document.getElementById('sidebar');
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('-translate-x-full');
+  });
 
-    emergencyCases.forEach(emergencyCase => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${emergencyCase.id}</td>
-        <td>${emergencyCase.name}</td>
-        <td>${emergencyCase.contact}</td>
-        <td>${emergencyCase.emergencyType}</td>
-        <td>${emergencyCase.condition}</td>
-      `;
-      tableBody.appendChild(row);
-    });
+  const addEmergencyBtn = document.getElementById('addEmergencyBtn');
+  const emergencyModal = document.getElementById('emergencyModal');
+  const closeEmergencyForm = document.getElementById('closeEmergencyForm');
+  const cancelEmergency = document.getElementById('cancelEmergency');
+  const emergencyForm = document.getElementById('emergencyForm');
+  const emergencyTableBody = document.getElementById('emergencyTableBody');
+  let emergencyCaseCounter = 1;
 
-    // Auto-generate and set emergency case ID
-    let lastId = localStorage.getItem("lastEmergencyCaseId");
-    let newId = lastId ? parseInt(lastId) + 1 : 1;
-    localStorage.setItem("lastEmergencyCaseId", newId);
-
-    const emergencyCaseIdInput = document.getElementById("emergencycase_id");
-    if (emergencyCaseIdInput !== null) {
-      emergencyCaseIdInput.value = newId;
+  function toggleEmergencyModal(show) {
+    if (show) {
+      emergencyForm.caseId.value = `CASE-${String(emergencyCaseCounter).padStart(3, '0')}`;
+      emergencyModal.classList.remove('hidden');
     } else {
-      console.warn("Element with ID 'emergencycase_id' not found.");
+      emergencyModal.classList.add('hidden');
     }
-  };
+  }
 
-  function storeEmergencyCaseDetails() {
-    const id = document.getElementById("emergencycase_id").value;
-    const name = document.getElementById("name").value.trim();
-    const contact = document.getElementById("contact").value.trim();
-    const emergencyType = document.getElementById("emergencyType").value.trim();
-    const condition = document.getElementById("condition").value.trim();
+  addEmergencyBtn.addEventListener('click', () => toggleEmergencyModal(true));
+  closeEmergencyForm.addEventListener('click', () => toggleEmergencyModal(false));
+  cancelEmergency.addEventListener('click', () => toggleEmergencyModal(false));
 
-    // Input validation
-    if (!name || !contact || !emergencyType || !condition) {
-      alert("All fields are required. Please fill in all the details.");
+  emergencyForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const caseId = emergencyForm.caseId.value.trim();
+    const patientName = emergencyForm.patientName.value.trim();
+    const roomNumber = emergencyForm.roomNumber.value.trim();
+    const contactNumber = emergencyForm.contactNumber.value.trim();
+    const emergencyType = emergencyForm.emergencyType.value.trim();
+    const conditionLevel = emergencyForm.conditionLevel.value;
+
+    if (!caseId || !patientName || !roomNumber || !contactNumber || !emergencyType || !conditionLevel) {
       return;
     }
 
-    if (!/^\d+$/.test(contact)) {
-      alert("Contact number must be numeric.");
-      return;
-    }
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="px-4 py-3 border-t border-slate-200">${caseId}</td>
+      <td class="px-4 py-3 border-t border-slate-200">${patientName}</td>
+      <td class="px-4 py-3 border-t border-slate-200">${roomNumber}</td>
+      <td class="px-4 py-3 border-t border-slate-200">${contactNumber}</td>
+      <td class="px-4 py-3 border-t border-slate-200">${emergencyType}</td>
+      <td class="px-4 py-3 border-t border-slate-200">${conditionLevel}</td>
+      <td class="px-4 py-3 border-t border-slate-200">
+        <button type="button" class="px-3 py-1 rounded-xl bg-red-500 text-white hover:bg-red-600">Remove</button>
+      </td>
+    `;
 
-    const newEmergencyCase = {
-      id,
-      name,
-      contact,
-      emergencyType,
-      condition,
-    };
-
-    const emergencyCases = JSON.parse(localStorage.getItem("emergencyCases")) || [];
-    emergencyCases.push(newEmergencyCase);
-    localStorage.setItem("emergencyCases", JSON.stringify(emergencyCases));
-
-    // Also update lastEmergencyCaseId
-    localStorage.setItem("lastEmergencyCaseId", id);
-
-    showToast("Emergency case details saved!");
-  }
-
-  function showToast(message) {
-    const toast = document.getElementById("toast");
-    toast.textContent = message;
-    toast.style.display = "block";
-    setTimeout(() => {
-      toast.style.display = "none";
-    }, 3000);
-  }
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    emergencyTableBody.appendChild(row);
+    emergencyCaseCounter++;
+    emergencyForm.reset();
+    toggleEmergencyModal(false);
+  });
+});
 </script>
-
-
-<div id="toast" style="position: fixed; bottom: 20px; right: 20px; background: #0077b6; color: white; padding: 10px 20px; border-radius: 8px; display: none; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
-  Emergency case details saved!
-</div>
+<script src="assets/js/auth.js"></script>
 </body>
 </html>

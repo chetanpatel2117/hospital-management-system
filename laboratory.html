@@ -1,0 +1,576 @@
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>MediCare Dashboard</title>
+
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+	<style>
+	body{
+	background:#f5f7fb;
+	font-family:'Segoe UI',sans-serif;
+	}
+	.card {
+	background: #fff;
+	border-radius: 1rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e2e8f0;
+	}
+	/* hide scrollbar visuals while keeping scroll functionality */
+	.no-scrollbar{
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+	.no-scrollbar::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera */
+	}
+	</style>
+	</head>
+
+	<body>
+
+	<div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none md:hidden transition-opacity duration-300 z-20"></div>
+
+	<div class="flex min-h-screen">
+
+	<!-- SIDEBAR -->
+	<div id="sidebar" class="w-64 bg-gradient-to-b from-blue-900 to-blue-700 text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
+
+	<div class="p-6 border-b border-blue-600">
+	<div class="flex items-center gap-3">
+	<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-700">
+	<i class="fa-solid fa-plus text-xl"></i>
+	</div>
+
+	<div>
+	<h2 class="text-3xl font-bold">MediCare</h2>
+	<p class="text-xs text-blue-100">Hospital Management</p>
+	</div>
+	</div>
+	</div>
+
+	<nav class="mt-6 px-4 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
+
+	<a class="flex items-center gap-3 rounded-xl px-4 py-3" href="dashboard.html">
+	<i class="fa-solid fa-house"></i> Dashboard
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="patient details.html">
+	<i class="fa-solid fa-user-group"></i> Patients
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="emergancy case.html">
+	<i class="fa-solid fa-ambulance"></i> Emergency
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="doctor details.html">
+	<i class="fa-solid fa-user-doctor"></i> Doctors
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="appointment details.html">
+	<i class="fa-solid fa-calendar-days"></i> Appointments
+	</a>
+<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="ICU details.html">
+	<i class="fa-solid fa-bed"></i>ICU details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="room details.html">
+	<i class="fa-solid fa-bed"></i>Room details
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="billing.html">
+	<i class="fa-solid fa-file-invoice-dollar"></i> Billing
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="pharmacy.html">
+	<i class="fa-solid fa-capsules"></i> Pharmacy
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 bg-blue-500 rounded-xl" href="laboratory.html">
+	<i class="fa-solid fa-flask"></i> Laboratory
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="report details.html">
+	<i class="fa-solid fa-chart-column"></i> Reports
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="staff details.html">
+	<i class="fa-solid fa-people-line"></i> Staff details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="settings.html">
+	<i class="fa-solid fa-gear"></i> Settings
+	</a>
+
+	</nav>
+
+	<button type="button" data-logout class="mt-auto flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl w-full text-left">
+	<i class="fa-solid fa-power-off"></i> Logout
+	</button>
+
+	</div>
+
+
+	<!-- MAIN -->
+	<div class="flex-1 relative overflow-auto">
+
+	<!-- TOPBAR -->
+	<div class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
+
+	<div class="flex items-center gap-4 flex-1">
+	<button id="sidebarToggle" class="text-slate-700 md:hidden p-2 rounded-xl hover:bg-slate-100">
+	<i class="fa-solid fa-bars text-xl"></i>
+	</button>
+	<div class="space-y-1">
+	<h1 class="text-4xl font-bold text-slate-800">Laboratory</h1>
+	</div>
+	</div>
+
+  <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            </button>
+            <div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Notifications</h3>
+                <span class="text-xs text-blue-600">3 new</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+                <div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+                <div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-message text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+            </button>
+            <div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Messages</h3>
+                <span class="text-xs text-blue-600">2 unread</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+                <div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+              </div>
+            </div>
+          </div>
+
+	<div class="flex items-center gap-3">
+	<img src="assets/image/profile.png" class="w-12 h-12 rounded-full">
+	<div>
+	<h4 id="profileName" class="font-semibold" data-profile-name></h4>
+	<p id="profileRole" class="text-sm text-slate-500" data-profile-role></p>
+	</div>
+	</div>
+	</div>
+	</div>
+            <main class="p-6 md:p-8 mt-24 ml-64">
+            <div class="max-w-7xl mx-auto space-y-6">
+            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Total Tests</h2>
+                <p class="mt-4 text-3xl font-bold text-slate-900">248</p>
+                </div>
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Pending Samples</h2>
+                <p class="mt-4 text-3xl font-bold text-amber-600">18</p>
+                </div>
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Reports Ready</h2>
+                <p class="mt-4 text-3xl font-bold text-blue-600">56</p>
+                </div>
+            </section>
+
+            <section class="grid gap-6 xl:grid-cols-2">
+                <section class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Quick Actions</h2>
+                    <p class="text-sm text-slate-500">Create new lab entries and manage reports.</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <button id="newTestBtn" class="w-full rounded-xl bg-blue-600 px-4 py-3 text-white hover:bg-blue-700">+ New Test Request</button>
+                    <button id="newSampleBtn" class="w-full rounded-xl bg-slate-100 px-4 py-3 text-slate-700 hover:bg-slate-200">+ New Sample Collection</button>
+                    <button id="generateReportBtn" class="w-full rounded-xl bg-slate-100 px-4 py-3 text-slate-700 hover:bg-slate-200">+ Generate Report</button>
+                </div>
+                </section>
+
+                <section class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Recent Test Requests</h2>
+                    <p class="text-sm text-slate-500">Latest lab work in progress.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left">
+                    <thead class="border-b text-slate-500 text-sm">
+                        <tr>
+                        <th class="py-3 px-2">Request ID</th>
+                        <th class="py-3 px-2">Patient</th>
+                        <th class="py-3 px-2">Test</th>
+                        <th class="py-3 px-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="labTableBody" class="text-slate-700">
+                    </tbody>
+                    </table>
+                </div>
+                </section>
+            </section>
+            </div>
+        </main>
+        </div>
+    </div>
+
+  <div id="testModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">New Test Request</h2>
+          <p class="text-sm text-slate-500">Create a new laboratory test request.</p>
+        </div>
+        <button id="closeTestModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="testForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient Name</label>
+            <input type="text" id="patientName" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient ID</label>
+            <input type="text" id="patientId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Test Type</label>
+            <select id="testType" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Test</option>
+              <option value="CBC">CBC (Complete Blood Count)</option>
+              <option value="Blood Sugar">Blood Sugar</option>
+              <option value="COVID-19">COVID-19</option>
+              <option value="Thyroid">Thyroid Profile</option>
+              <option value="Lipid">Lipid Profile</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Priority</label>
+            <select id="priority" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="Normal">Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Notes</label>
+          <textarea id="notes" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" rows="3"></textarea>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Create Test Request</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="sampleModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">New Sample Collection</h2>
+          <p class="text-sm text-slate-500">Record a new sample collection.</p>
+        </div>
+        <button id="closeSampleModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="sampleForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Request ID</label>
+            <input type="text" id="requestId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient Name</label>
+            <input type="text" id="samplePatientName" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Sample Type</label>
+            <select id="sampleType" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Type</option>
+              <option value="Blood">Blood</option>
+              <option value="Urine">Urine</option>
+              <option value="Swab">Swab</option>
+              <option value="Stool">Stool</option>
+              <option value="Saliva">Saliva</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Collection Time</label>
+            <input type="datetime-local" id="collectionTime" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Collector Name</label>
+          <input type="text" id="collectorName" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Record Collection</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Generate Report</h2>
+          <p class="text-sm text-slate-500">Generate laboratory test report.</p>
+        </div>
+        <button id="closeReportModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="reportForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Request ID</label>
+            <input type="text" id="reportRequestId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Test Type</label>
+            <input type="text" id="reportTestType" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Result Status</label>
+            <select id="resultStatus" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Status</option>
+              <option value="Normal">Normal</option>
+              <option value="Abnormal">Abnormal</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Verified By</label>
+            <input type="text" id="verifiedBy" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Findings</label>
+          <textarea id="findings" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Generate Report</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const labTableBody = document.getElementById('labTableBody');
+
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarBackdrop.classList.toggle('opacity-0');
+      sidebarBackdrop.classList.toggle('pointer-events-none');
+    });
+
+    sidebarBackdrop?.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarBackdrop.classList.add('opacity-0');
+      sidebarBackdrop.classList.add('pointer-events-none');
+    });
+
+    function renderLabTests(tests) {
+      if (!tests.length) {
+        labTableBody.innerHTML = '<tr><td colspan="4" class="py-3 px-2 text-slate-500">No test requests yet.</td></tr>';
+        return;
+      }
+
+      labTableBody.innerHTML = tests.map((test) => `
+        <tr class="border-b">
+          <td class="py-3 px-2">${test._id ? test._id.slice(0, 6).toUpperCase() : 'N/A'}</td>
+          <td class="py-3 px-2">${test.patientName}</td>
+          <td class="py-3 px-2">${test.testName}</td>
+          <td class="py-3 px-2"><span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ${test.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${test.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadLabTests() {
+      try {
+        const response = await fetch('/api/lab-tests');
+        if (!response.ok) throw new Error('Unable to load lab tests');
+        const tests = await response.json();
+        renderLabTests(tests);
+      } catch (error) {
+        labTableBody.innerHTML = `<tr><td colspan="4" class="py-3 px-2 text-red-500">${error.message}</td></tr>`;
+      }
+    }
+
+    const newTestBtn = document.getElementById('newTestBtn');
+    const testModal = document.getElementById('testModal');
+    const closeTestModal = document.getElementById('closeTestModal');
+    const testForm = document.getElementById('testForm');
+
+    newTestBtn.addEventListener('click', () => {
+      testModal.classList.remove('hidden');
+      testModal.classList.add('flex');
+    });
+
+    closeTestModal.addEventListener('click', () => {
+      testModal.classList.add('hidden');
+      testModal.classList.remove('flex');
+      testForm.reset();
+    });
+
+    testModal.addEventListener('click', (event) => {
+      if (event.target === testModal) {
+        testModal.classList.add('hidden');
+        testModal.classList.remove('flex');
+        testForm.reset();
+      }
+    });
+
+    testForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const patientName = document.getElementById('patientName').value.trim();
+      const testType = document.getElementById('testType').value.trim();
+      const priority = document.getElementById('priority').value.trim();
+
+      if (!patientName || !testType) return;
+
+      try {
+        const response = await fetch('/api/lab-tests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientName, testName: testType, sampleCollected: false, reportReady: false, status: priority })
+        });
+        if (!response.ok) throw new Error('Unable to create lab request');
+        alert(`Test Request Created!\nPatient: ${patientName}\nTest: ${testType}\nPriority: ${priority}`);
+        testForm.reset();
+        testModal.classList.add('hidden');
+        testModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    const newSampleBtn = document.getElementById('newSampleBtn');
+    const sampleModal = document.getElementById('sampleModal');
+    const closeSampleModal = document.getElementById('closeSampleModal');
+    const sampleForm = document.getElementById('sampleForm');
+
+    newSampleBtn.addEventListener('click', () => {
+      sampleModal.classList.remove('hidden');
+      sampleModal.classList.add('flex');
+    });
+
+    closeSampleModal.addEventListener('click', () => {
+      sampleModal.classList.add('hidden');
+      sampleModal.classList.remove('flex');
+      sampleForm.reset();
+    });
+
+    sampleModal.addEventListener('click', (event) => {
+      if (event.target === sampleModal) {
+        sampleModal.classList.add('hidden');
+        sampleModal.classList.remove('flex');
+        sampleForm.reset();
+      }
+    });
+
+    sampleForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const requestId = document.getElementById('requestId').value.trim();
+      const sampleType = document.getElementById('sampleType').value.trim();
+      const collectorName = document.getElementById('collectorName').value.trim();
+
+      if (!requestId || !sampleType || !collectorName) return;
+
+      try {
+        const response = await fetch('/api/lab-tests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientName: requestId, testName: sampleType, sampleCollected: true, reportReady: false, status: 'Sample Collected' })
+        });
+        if (!response.ok) throw new Error('Unable to record sample');
+        alert(`Sample Recorded!\nRequest ID: ${requestId}\nType: ${sampleType}\nCollector: ${collectorName}`);
+        sampleForm.reset();
+        sampleModal.classList.add('hidden');
+        sampleModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const reportModal = document.getElementById('reportModal');
+    const closeReportModal = document.getElementById('closeReportModal');
+    const reportForm = document.getElementById('reportForm');
+
+    generateReportBtn.addEventListener('click', () => {
+      reportModal.classList.remove('hidden');
+      reportModal.classList.add('flex');
+    });
+
+    closeReportModal.addEventListener('click', () => {
+      reportModal.classList.add('hidden');
+      reportModal.classList.remove('flex');
+      reportForm.reset();
+    });
+
+    reportModal.addEventListener('click', (event) => {
+      if (event.target === reportModal) {
+        reportModal.classList.add('hidden');
+        reportModal.classList.remove('flex');
+        reportForm.reset();
+      }
+    });
+
+    reportForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const reportRequestId = document.getElementById('reportRequestId').value.trim();
+      const reportTestType = document.getElementById('reportTestType').value.trim();
+      const resultStatus = document.getElementById('resultStatus').value.trim();
+
+      if (!reportRequestId || !reportTestType || !resultStatus) return;
+
+      try {
+        const response = await fetch('/api/lab-tests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientName: reportRequestId, testName: reportTestType, sampleCollected: true, reportReady: true, status: resultStatus })
+        });
+        if (!response.ok) throw new Error('Unable to generate report');
+        alert(`Report Generated!\nRequest ID: ${reportRequestId}\nTest: ${reportTestType}\nStatus: ${resultStatus}`);
+        reportForm.reset();
+        reportModal.classList.add('hidden');
+        reportModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    loadLabTests();
+  </script>
+<script src="assets/js/auth.js"></script>
+</body>
+</html>

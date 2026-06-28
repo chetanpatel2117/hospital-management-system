@@ -1,182 +1,1763 @@
-html, body {
-  width: 100vw;
-  min-width: 100vw;
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-body {
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
-  margin: 0;
-  padding: 0;
-  background: linear-gradient(120deg, #e3f2fd 0%, #e0f7fa 100%);
-  color: #222;
-  min-height: 100vh;
+/* =========================================================
+   MEDICARE HOSPITAL DASHBOARD
+   STYLE.CSS - PART 1
+   Sidebar + Topbar + Layout
+========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* =========================================================
+   ROOT VARIABLES
+========================================================= */
+
+:root{
+
+    --primary:#0b5ed7;
+    --primary-dark:#003d99;
+    --primary-light:#2f7cf6;
+
+    --success:#22c55e;
+    --danger:#ef4444;
+    --warning:#ff9f43;
+    --purple:#8b5cf6;
+
+    --text:#1f2937;
+    --text-light:#6b7280;
+
+    --bg:#f5f8ff;
+    --white:#ffffff;
+
+    --shadow-sm:0 2px 10px rgba(0,0,0,.04);
+    --shadow-md:0 5px 20px rgba(0,0,0,.08);
+    --shadow-lg:0 10px 30px rgba(0,0,0,.12);
+
+    --radius-sm:12px;
+    --radius-md:18px;
+    --radius-lg:24px;
+
+    --sidebar-width:270px;
 }
 
-header {
-  background: linear-gradient(90deg, #0077b6 0%, #00b4d8 100%);
-  color: #fff;
-  height: 64px;
-  width: 100%;
-  padding: 0 32px;
-  font-size: 2rem;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 12px #0077b633;
-  letter-spacing: 1px;
+/* =========================================================
+   RESET
+========================================================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
 }
 
-.logout a {
-  font-size: 1rem;
-  color: #ff4d4d;
-  text-decoration: none;
-  padding: 8px 18px;
-  border-radius: 8px;
-  background: #fff;
-  font-weight: bold;
-  transition: 0.3s;
-  border: none;
+html{
+    scroll-behavior:smooth;
 }
 
-.logout a:hover {
-  color: #fff;
-  background: #ff4d4d;
+body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overflow-x:hidden;
 }
 
-nav {
-  width: 220px;
-  height: 100vh;
-  position: fixed;
-  top: 64px;
-  left: 0;
-  background: linear-gradient(180deg, #001f54 0%, #003580 100%);
-  padding-top: 24px;
-  box-shadow: 2px 0 8px #001f5422;
-  animation: slideInLeft 0.7s;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.container{
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    padding:0 22px;
 }
 
-nav ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+a{
+    text-decoration:none;
 }
 
-nav ul li {
-  margin: 18px 0;
+ul{
+    list-style:none;
 }
 
-nav ul li a {
-  color: #fff;
-  text-decoration: none;
-  padding: 12px 24px;
-  display: block;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 1.08rem;
-  transition: background 0.3s, color 0.3s;
+img{
+    max-width:100%;
+    display:block;
 }
 
-nav ul li a:hover, nav ul li a.active {
-  background: #00b4d8;
-  color: #fff;
+button,
+input,
+textarea{
+    font-family:'Inter',sans-serif;
 }
 
-main {
-  margin-left: 240px;
-  padding: 100px 32px 60px;
-  min-height: calc(100vh - 64px);
-  background: none;
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar{
+    width:8px;
 }
 
-.dashboard-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 32px;
-  margin-bottom: 2rem;
+::-webkit-scrollbar-track{
+    background:#e8edf9;
 }
 
-.card {
-  background: linear-gradient(120deg, #fff 60%, #e1f5fe 100%);
-  border: 2px solid #1976d2; /* blue border */
-  padding: 32px 20px;
-  border-radius: 18px;
-  box-shadow: 0 4px 16px #0077b622;
-  text-align: center;
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
+::-webkit-scrollbar-thumb{
+    background:#9db8f8;
+    border-radius:50px;
 }
 
-.card:hover {
-  transform: translateY(-8px) scale(1.04);
-  box-shadow: 0 8px 32px #00b4d822;
-  background: linear-gradient(120deg, #e0f7fa 60%, #fff 100%);
-  border-color: #1565c0; /* darker blue on hover */
+::-webkit-scrollbar-thumb:hover{
+    background:#2f7cf6;
 }
 
-.card h3 {
-  margin-bottom: 12px;
-  color: #1976d2; /* blue heading */
-  font-size: 1.3rem;
-  font-weight: 700;
+/* =========================================================
+   MAIN WRAPPER
+========================================================= */
+
+.dashboard-wrapper{
+    display:flex;
+    min-height:100vh;
+    width:100%;
 }
 
-.card p {
-  color: #0288d1;
-  font-size: 2.1rem;
-  font-weight: bold;
-  color: #004d61;
-  margin: 0;
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar{
+
+    width:var(--sidebar-width);
+    min-height:100vh;
+
+    position:fixed;
+    left:0;
+    top:0;
+
+    background:
+    linear-gradient(
+        180deg,
+        #0b5ed7 0%,
+        #0753c6 20%,
+        #0447b0 50%,
+        #003d99 100%
+    );
+
+    color:white;
+
+    padding:25px 15px;
+
+    display:flex;
+    flex-direction:column;
+
+    z-index:999;
+
+    box-shadow:
+    8px 0 30px rgba(0,0,0,.12);
 }
 
-.card a {
-  color: inherit;
-  text-decoration: none;
-  display: block;
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logo-area{
+
+    display:flex;
+    align-items:center;
+    gap:15px;
+
+    margin-bottom:35px;
 }
 
-footer {
-  text-align: center;
-  padding: 14px;
-  background: #004aad;
-  color: #fff;
-  position: fixed;
-  bottom: 0;
-  left: 240px;
-  width: calc(100% - 240px);
-  font-size: 1rem;
-  letter-spacing: 1px;
-  box-shadow: 0 -2px 12px #004aad33;
+.logo-icon{
+
+    width:60px;
+    height:60px;
+
+    border-radius:18px;
+
+    background:white;
+
+    color:#0b5ed7;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:22px;
+
+    box-shadow:
+    0 8px 20px rgba(255,255,255,.25);
 }
 
-@media (max-width: 900px) {
-  main { margin-left: 0; padding: 100px 10px 60px; }
-  nav { position: static; width: 100%; height: auto; flex-direction: row; box-shadow: none; }
-  footer { left: 0; width: 100%; }
+.logo-area h3{
+
+    font-size:28px;
+    font-weight:800;
+    margin-bottom:3px;
+    letter-spacing:.5px;
 }
 
-@media (max-width: 600px) {
-  header { font-size: 1.2rem; padding: 0 10px; height: 54px; }
-  nav ul li a { font-size: 0.98rem; padding: 10px 10px; }
-  .dashboard-cards { grid-template-columns: 1fr; gap: 18px; }
-  main { padding: 70px 2vw 60px; }
+.logo-area p{
+
+    margin:0;
+    font-size:12px;
+    opacity:.9;
+    font-weight:500;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* =========================================================
+   SIDEBAR MENU
+========================================================= */
+
+.sidebar-menu{
+
+    width:100%;
+    margin-top:10px;
 }
 
-@keyframes slideInLeft {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+.sidebar-menu li{
+
+    display:flex;
+    align-items:center;
+
+    gap:15px;
+
+    padding:0;
+
+    margin-bottom:10px;
+
+    border-radius:16px;
+
+    transition:.3s ease;
+
+    font-size:15px;
+    font-weight:600;
+}
+
+.sidebar-menu li a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    width:100%;
+    padding:16px 20px;
+    color:white;
+}
+
+.sidebar-menu li i{
+
+    width:22px;
+    font-size:18px;
+}
+
+.sidebar-menu li:hover,
+.sidebar-menu li.active{
+
+    background:
+    linear-gradient(
+    90deg,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,.08)
+    );
+
+    backdrop-filter:blur(10px);
+
+    box-shadow:
+    0 10px 20px rgba(0,0,0,.15);
+
+    border:
+    1px solid rgba(255,255,255,.12);
+}
+
+.sidebar-menu li.active::before{
+
+    content:"";
+
+    width:5px;
+    height:28px;
+
+    background:white;
+
+    border-radius:10px;
+
+    position:absolute;
+    left:8px;
+}
+
+/* =========================================================
+   HELP CARD
+========================================================= */
+
+.help-card{
+
+    margin-top:auto;
+
+    background:
+    rgba(255,255,255,.10);
+
+    backdrop-filter:blur(10px);
+
+    border:
+    1px solid rgba(255,255,255,.15);
+
+    border-radius:22px;
+
+    padding:22px;
+
+    text-align:center;
+}
+
+.help-card h5{
+
+    font-size:18px;
+    margin-bottom:12px;
+    font-weight:700;
+}
+
+.help-card p{
+
+    font-size:13px;
+    line-height:22px;
+    opacity:.9;
+    margin-bottom:15px;
+}
+
+.help-card button{
+
+    width:100%;
+
+    height:45px;
+
+    border:none;
+
+    background:white;
+
+    color:#0b5ed7;
+
+    border-radius:12px;
+
+    font-weight:700;
+
+    transition:.3s;
+}
+
+.help-card button:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:
+    0 10px 20px rgba(0,0,0,.15);
+}
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.logout{
+
+    height:55px;
+
+    display:flex;
+    align-items:center;
+
+    gap:15px;
+
+    margin-top:20px;
+
+    padding:0 18px;
+
+    border-radius:16px;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.logout:hover{
+
+    background:
+    rgba(255,255,255,.10);
+}
+
+.logout i{
+
+    font-size:18px;
+}
+
+/* =========================================================
+   MAIN CONTENT
+========================================================= */
+
+.main-content{
+
+    width:calc(100% - var(--sidebar-width));
+
+    margin-left:var(--sidebar-width);
+
+    padding:25px;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.topbar{
+
+    height:85px;
+
+    background:white;
+
+    border-radius:22px;
+
+    padding:0 25px;
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:25px;
+
+    box-shadow:
+    0 5px 20px rgba(0,0,0,.05);
+}
+
+/* =========================================================
+   LEFT TOPBAR
+========================================================= */
+
+.left-topbar{
+
+    display:flex;
+    align-items:center;
+    gap:20px;
+}
+
+.menu-btn{
+
+    width:45px;
+    height:45px;
+
+    border:none;
+
+    background:#f5f8ff;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.menu-btn:hover{
+
+    background:#e9f0ff;
+}
+
+.menu-btn i{
+
+    font-size:18px;
+}
+
+.left-topbar h2{
+
+    font-size:28px;
+    font-weight:800;
+}
+
+/* =========================================================
+   SEARCH BOX
+========================================================= */
+
+.search-box{
+
+    width:450px;
+    height:52px;
+
+    background:#f5f8ff;
+
+    border-radius:14px;
+
+    padding:0 18px;
+
+    display:flex;
+    align-items:center;
+
+    border:1px solid transparent;
+
+    transition:.3s;
+}
+
+.search-box:hover{
+
+    border-color:#dbe5ff;
+}
+
+.search-box:focus-within{
+
+    border-color:#2f7cf6;
+    background:white;
+}
+
+.search-box i{
+
+    color:#6b7280;
+}
+
+.search-box input{
+
+    flex:1;
+
+    border:none;
+    outline:none;
+
+    background:transparent;
+
+    margin-left:12px;
+
+    font-size:14px;
+}
+
+/* =========================================================
+   TOPBAR ICONS
+========================================================= */
+
+.top-icons{
+
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+.icon-badge{
+
+    width:45px;
+    height:45px;
+
+    border-radius:12px;
+
+    background:#f5f8ff;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    position:relative;
+
+    cursor:pointer;
+
+    transition:.3s;
+}
+
+.icon-badge:hover{
+
+    background:#edf3ff;
+}
+
+.icon-badge i{
+
+    font-size:18px;
+}
+
+.icon-badge span{
+
+    position:absolute;
+
+    top:-5px;
+    right:-5px;
+
+    width:20px;
+    height:20px;
+
+    border-radius:50%;
+
+    background:#ef4444;
+    color:white;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    font-size:10px;
+    font-weight:700;
+}
+/* =========================================================
+   STYLE.CSS - PART 2
+   Stats Cards + Tables + Doctor Cards + Calendar
+========================================================= */
+
+/* =========================================================
+   COMMON CARD SECTION
+========================================================= */
+
+.card-section{
+    background:#ffffff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+    position:relative;
+    overflow:hidden;
+}
+
+.card-section::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:4px;
+    background:linear-gradient(
+        90deg,
+        #2f7cf6,
+        #0b5ed7
+    );
+}
+
+/* =========================================================
+   SECTION HEADER
+========================================================= */
+
+.section-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:22px;
+}
+
+.section-header h4{
+    font-size:20px;
+    font-weight:800;
+    color:#1f2937;
+    margin:0;
+}
+
+.section-header a{
+    color:#2f7cf6;
+    font-size:14px;
+    font-weight:700;
+}
+
+.section-header a:hover{
+    color:#003d99;
+}
+
+/* =========================================================
+   STATS GRID
+========================================================= */
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:20px;
+    margin-bottom:25px;
+}
+
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+.stat-card{
+    background:#ffffff;
+    border-radius:24px;
+    padding:22px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+    transition:.35s ease;
+}
+
+.stat-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 15px 30px rgba(0,0,0,.08);
+}
+
+.stat-card::after{
+    content:"";
+    position:absolute;
+    right:-20px;
+    top:-20px;
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    background:rgba(47,124,246,.05);
+}
+
+.stat-icon{
+    width:68px;
+    height:68px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:24px;
+    flex-shrink:0;
+}
+
+.blue{
+    background:linear-gradient(135deg,#2f7cf6,#0b5ed7);
+}
+
+.green-bg{
+    background:linear-gradient(135deg,#34d399,#10b981);
+}
+
+.orange{
+    background:linear-gradient(135deg,#ffb347,#ff9f43);
+}
+
+.purple{
+    background:linear-gradient(135deg,#a855f7,#8b5cf6);
+}
+
+.red-bg{
+    background:linear-gradient(135deg,#f87171,#ef4444);
+}
+
+.stat-card p{
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:6px;
+    font-weight:500;
+}
+
+.stat-card h3{
+    font-size:28px;
+    font-weight:800;
+    margin-bottom:6px;
+    color:#111827;
+}
+
+.green{
+    color:#22c55e;
+    font-size:12px;
+    font-weight:700;
+}
+
+.red{
+    color:#ef4444;
+    font-size:12px;
+    font-weight:700;
+}
+
+/* =========================================================
+   PATIENT TABLE
+========================================================= */
+
+.patient-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:5px;
+}
+
+.patient-table thead{
+    background:#f7f9ff;
+}
+
+.patient-table thead th{
+    padding:18px 15px;
+    font-size:13px;
+    font-weight:700;
+    color:#374151;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    border:none;
+}
+
+.patient-table tbody tr{
+    border-bottom:1px solid #eef2ff;
+    transition:.3s;
+}
+
+.patient-table tbody tr:hover{
+    background:#f8fbff;
+}
+
+.patient-table td{
+    padding:18px 15px;
+    font-size:14px;
+    color:#374151;
+    vertical-align:middle;
+}
+
+.patient-table tbody tr:last-child{
+    border-bottom:none;
+}
+
+/* =========================================================
+   PATIENT PROFILE CELL
+========================================================= */
+
+.patient-info{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.patient-info img{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.patient-info h6{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+}
+
+.patient-info span{
+    font-size:12px;
+    color:#6b7280;
+}
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 14px;
+    border-radius:30px;
+    font-size:12px;
+    font-weight:700;
+}
+
+.status.admitted{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.status.treatment{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.status.discharged{
+    background:#f3f4f6;
+    color:#374151;
+}
+
+.status.critical{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+.action-btns{
+    display:flex;
+    gap:10px;
+}
+
+.action-btn{
+    width:34px;
+    height:34px;
+    border:none;
+    border-radius:10px;
+    background:#f5f8ff;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.action-btn:hover{
+    background:#e8f0ff;
+}
+
+.action-btn i{
+    color:#2f7cf6;
+}
+
+/* =========================================================
+   APPOINTMENT CALENDAR
+========================================================= */
+
+#calendar{
+    min-height:500px;
+    background:#fff;
+    border-radius:18px;
+    padding:15px;
+}
+
+.calendar-box{
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.calendar-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.calendar-header h5{
+    font-weight:700;
+    margin:0;
+}
+
+.calendar-nav{
+    display:flex;
+    gap:10px;
+}
+
+.calendar-nav button{
+    width:36px;
+    height:36px;
+    border:none;
+    border-radius:10px;
+    background:#f5f8ff;
+    cursor:pointer;
+}
+
+.calendar-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:10px;
+}
+
+.calendar-day{
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+    color:#6b7280;
+}
+
+.calendar-date{
+    height:60px;
+    border-radius:14px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.calendar-date:hover{
+    background:#edf4ff;
+}
+
+.calendar-date.active{
+    background:#2f7cf6;
+    color:#fff;
+    font-weight:700;
+}
+
+/* =========================================================
+   APPOINTMENT EVENT CARD
+========================================================= */
+
+.event-card{
+    padding:14px;
+    border-radius:16px;
+    margin-top:12px;
+    background:#eef4ff;
+    border-left:5px solid #2f7cf6;
+}
+
+.event-card h6{
+    margin-bottom:4px;
+    font-weight:700;
+}
+
+.event-card p{
+    margin:0;
+    font-size:13px;
+    color:#6b7280;
+}
+
+/* =========================================================
+   DOCTOR AVAILABILITY
+========================================================= */
+
+.doctor-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px;
+    border-radius:18px;
+    margin-bottom:14px;
+    transition:.3s;
+    border:1px solid #eef2ff;
+}
+
+.doctor-item:hover{
+    background:#f8fbff;
+}
+
+.doctor-item img{
+    width:55px;
+    height:55px;
+    border-radius:50%;
+    object-fit:cover;
+}
+
+.doctor-item h6{
+    margin:0;
+    font-size:15px;
+    font-weight:700;
+}
+
+.doctor-item small{
+    color:#6b7280;
+}
+
+.doctor-item .available{
+    margin-left:auto;
+    background:#dcfce7;
+    color:#166534;
+    padding:7px 12px;
+    border-radius:30px;
+    font-size:12px;
+    font-weight:700;
+}
+
+.doctor-item .busy{
+    margin-left:auto;
+    background:#fee2e2;
+    color:#991b1b;
+    padding:7px 12px;
+    border-radius:30px;
+    font-size:12px;
+    font-weight:700;
+}
+
+/* =========================================================
+   DOCTOR SPECIALIZATION TAG
+========================================================= */
+
+.speciality-tag{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:20px;
+    background:#eef4ff;
+    color:#2f7cf6;
+    font-size:11px;
+    font-weight:700;
+    margin-top:6px;
+}
+
+/* =========================================================
+   AVAILABILITY PROGRESS
+========================================================= */
+
+.availability-progress{
+    margin-top:12px;
+}
+
+.progress-track{
+    width:100%;
+    height:8px;
+    background:#edf2ff;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-fill{
+    height:100%;
+    background:linear-gradient(
+        90deg,
+        #2f7cf6,
+        #0b5ed7
+    );
+    border-radius:20px;
+}
+
+/* =========================================================
+   MINI CARD UTILITIES
+========================================================= */
+
+.mini-card{
+    background:#fff;
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 5px 15px rgba(0,0,0,.05);
+}
+
+.mini-card h5{
+    font-size:16px;
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+.mini-card p{
+    font-size:13px;
+    color:#6b7280;
+    margin:0;
+}
+
+/* =========================================================
+   SECTION SPACING
+========================================================= */
+
+.mt-20{
+    margin-top:20px;
+}
+
+.mt-30{
+    margin-top:30px;
+}
+
+.mb-20{
+    margin-bottom:20px;
+}
+
+.mb-30{
+    margin-bottom:30px;
+}
+/* =========================================================
+   STYLE.CSS - PART 3
+   Charts + Emergency Panel + Inventory + Activities
+   Notifications + Footer + Responsive Layout
+========================================================= */
+
+/* =========================================================
+   CHART CARDS
+========================================================= */
+
+.chart-card{
+    background:#ffffff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+    height:100%;
+    position:relative;
+    overflow:hidden;
+}
+
+.chart-card::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:4px;
+    background:linear-gradient(
+        90deg,
+        #2f7cf6,
+        #0b5ed7
+    );
+}
+
+.chart-card h4{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:20px;
+}
+
+.chart-card canvas{
+    width:100% !important;
+    height:320px !important;
+}
+
+/* =========================================================
+   REVENUE CARD
+========================================================= */
+
+.revenue-summary{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:20px;
+}
+
+.revenue-item{
+    text-align:center;
+}
+
+.revenue-item h3{
+    font-size:24px;
+    font-weight:800;
+}
+
+.revenue-item p{
+    color:#6b7280;
+    font-size:13px;
+}
+
+/* =========================================================
+   BILLING CARD
+========================================================= */
+
+.billing-card{
+    background:#fff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.billing-stats{
+    display:flex;
+    justify-content:space-between;
+    margin-top:20px;
+}
+
+.billing-box{
+    text-align:center;
+}
+
+.billing-box h5{
+    font-weight:800;
+    margin-bottom:5px;
+}
+
+.billing-box span{
+    color:#6b7280;
+    font-size:13px;
+}
+
+/* =========================================================
+   EMERGENCY CASES PANEL
+========================================================= */
+
+.emergency-panel{
+    background:#ffffff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.emergency-panel h4{
+    font-weight:800;
+    margin-bottom:20px;
+}
+
+.emergency-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px;
+    border-radius:18px;
+    margin-bottom:14px;
+    border-left:5px solid #ef4444;
+    background:#fff5f5;
+}
+
+.emergency-icon{
+    width:52px;
+    height:52px;
+    border-radius:16px;
+    background:#ef4444;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+}
+
+.emergency-info h6{
+    margin:0;
+    font-weight:700;
+}
+
+.emergency-info p{
+    margin:3px 0 0;
+    color:#6b7280;
+    font-size:13px;
+}
+
+.priority-high{
+    margin-left:auto;
+    padding:7px 12px;
+    border-radius:30px;
+    background:#fee2e2;
+    color:#991b1b;
+    font-size:12px;
+    font-weight:700;
+}
+
+.priority-medium{
+    margin-left:auto;
+    padding:7px 12px;
+    border-radius:30px;
+    background:#fef3c7;
+    color:#92400e;
+    font-size:12px;
+    font-weight:700;
+}
+
+/* =========================================================
+   RECENT ACTIVITIES
+========================================================= */
+
+.activity-card{
+    background:#fff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.activity-card h4{
+    font-weight:800;
+    margin-bottom:25px;
+}
+
+.timeline{
+    position:relative;
+    padding-left:30px;
+}
+
+.timeline::before{
+    content:"";
+    position:absolute;
+    left:10px;
+    top:0;
+    width:2px;
+    height:100%;
+    background:#dbeafe;
+}
+
+.timeline-item{
+    position:relative;
+    margin-bottom:25px;
+}
+
+.timeline-item::before{
+    content:"";
+    position:absolute;
+    left:-25px;
+    top:4px;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#2f7cf6;
+}
+
+.timeline-item h6{
+    font-weight:700;
+    margin-bottom:5px;
+}
+
+.timeline-item p{
+    margin:0;
+    font-size:13px;
+    color:#6b7280;
+}
+
+.timeline-item span{
+    display:block;
+    margin-top:5px;
+    color:#9ca3af;
+    font-size:12px;
+}
+
+/* =========================================================
+   PHARMACY INVENTORY
+========================================================= */
+
+.inventory-card{
+    background:#fff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.inventory-card h4{
+    font-weight:800;
+    margin-bottom:20px;
+}
+
+.inventory-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.inventory-table thead{
+    background:#f8faff;
+}
+
+.inventory-table th{
+    padding:16px;
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+}
+
+.inventory-table td{
+    padding:16px;
+    border-bottom:1px solid #eef2ff;
+    font-size:14px;
+}
+
+.stock-high{
+    color:#22c55e;
+    font-weight:700;
+}
+
+.stock-medium{
+    color:#f59e0b;
+    font-weight:700;
+}
+
+.stock-low{
+    color:#ef4444;
+    font-weight:700;
+}
+
+/* =========================================================
+   DEPARTMENT PERFORMANCE
+========================================================= */
+
+.department-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+}
+
+.department-card{
+    background:#fff;
+    border-radius:22px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.department-icon{
+    width:65px;
+    height:65px;
+    margin:auto;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    color:#fff;
+    margin-bottom:15px;
+}
+
+.department-card h5{
+    font-weight:800;
+    margin-bottom:6px;
+}
+
+.department-card p{
+    color:#6b7280;
+    font-size:13px;
+}
+
+/* =========================================================
+   NOTIFICATIONS PANEL
+========================================================= */
+
+.notification-card{
+    background:#fff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.notification-item{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:14px 0;
+    border-bottom:1px solid #eef2ff;
+}
+
+.notification-item:last-child{
+    border-bottom:none;
+}
+
+.notification-icon{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:#eef4ff;
+    color:#2f7cf6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.notification-content h6{
+    margin:0;
+    font-size:14px;
+    font-weight:700;
+}
+
+.notification-content p{
+    margin:3px 0;
+    color:#6b7280;
+    font-size:13px;
+}
+
+.notification-content span{
+    font-size:12px;
+    color:#9ca3af;
+}
+
+/* =========================================================
+   QUICK ACTION BUTTONS
+========================================================= */
+
+.quick-actions{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.quick-btn{
+    height:50px;
+    padding:0 20px;
+    border:none;
+    border-radius:14px;
+    background:#2f7cf6;
+    color:#fff;
+    font-weight:700;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.quick-btn:hover{
+    transform:translateY(-2px);
+}
+
+.quick-btn.secondary{
+    background:#eef4ff;
+    color:#2f7cf6;
+}
+
+/* =========================================================
+   PAGE INNER + TOPBAR
+========================================================= */
+
+.page-inner{
+    background:#ffffff;
+    border-radius:24px;
+    padding:24px;
+    box-shadow:0 8px 30px rgba(0,0,0,.05);
+}
+
+.topbar p{
+    margin:0;
+    color:var(--text-light);
+    font-size:0.95rem;
+}
+
+.search-box input{
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    margin-left:12px;
+    font-size:14px;
+    color:var(--text);
+}
+
+.dashboard-footer{
+    margin-top:30px;
+    padding:20px;
+    text-align:center;
+    color:#6b7280;
+    font-size:14px;
+}
+
+/* =========================================================
+   RESPONSIVE - LARGE SCREEN
+========================================================= */
+
+@media(max-width:1400px){
+
+    .stats-grid{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .department-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - TABLET
+========================================================= */
+
+@media(max-width:1200px){
+
+    .sidebar{
+        width:230px;
+    }
+
+    .main-content{
+        margin-left:230px;
+        width:calc(100% - 230px);
+    }
+
+    .stats-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .department-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .search-box{
+        width:300px;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - SMALL TABLET
+========================================================= */
+
+@media(max-width:992px){
+
+    .sidebar{
+        left:-100%;
+        transition:.4s;
+    }
+
+    .sidebar.active{
+        left:0;
+    }
+
+    .main-content{
+        width:100%;
+        margin-left:0;
+    }
+
+    .topbar{
+        flex-wrap:wrap;
+        height:auto;
+        padding:20px;
+        gap:15px;
+    }
+
+    .search-box{
+        width:100%;
+    }
+
+    .stats-grid{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .department-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - MOBILE
+========================================================= */
+
+@media(max-width:768px){
+
+    .stats-grid{
+        grid-template-columns:1fr;
+    }
+
+    .top-icons{
+        width:100%;
+        justify-content:space-between;
+    }
+
+    .profile{
+        display:none;
+    }
+
+    .card-section,
+    .chart-card,
+    .inventory-card,
+    .notification-card,
+    .activity-card{
+        padding:18px;
+    }
+
+    .patient-table{
+        display:block;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    .inventory-table{
+        display:block;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+    .chart-card canvas{
+        height:260px !important;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE - SMALL MOBILE
+========================================================= */
+
+@media(max-width:480px){
+
+    .main-content{
+        padding:15px;
+    }
+
+    .left-topbar h2{
+        font-size:22px;
+    }
+
+    .section-header h4{
+        font-size:17px;
+    }
+
+    .stat-card h3{
+        font-size:22px;
+    }
+
+    .doctor-item{
+        flex-direction:column;
+        text-align:center;
+    }
+
+    .doctor-item .available,
+    .doctor-item .busy{
+        margin:auto;
+    }
+
+    .quick-actions{
+        flex-direction:column;
+    }
+
+    .quick-btn{
+        width:100%;
+    }
+}
+
+/* =========================================================
+   FINAL POLISH
+========================================================= */
+
+.shadow-hover{
+    transition:.3s ease;
+}
+
+.shadow-hover:hover{
+    transform:translateY(-5px);
+    box-shadow:0 15px 35px rgba(0,0,0,.08);
+}
+
+.text-primary{
+    color:#2f7cf6;
+}
+
+.text-success{
+    color:#22c55e;
+}
+
+.text-danger{
+    color:#ef4444;
+}
+
+.bg-primary-light{
+    background:#eef4ff;
+}
+
+.bg-success-light{
+    background:#ecfdf5;
+}
+
+.bg-danger-light{
+    background:#fef2f2;
+}
+
+.rounded-xl{
+    border-radius:24px;
 }

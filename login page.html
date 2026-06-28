@@ -1,132 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - Hospital Management System</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCare Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
-
     body {
       margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #e0ecff, #f3f7ff);
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 50%, #fff 100%);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      color: #0f172a;
+    }
+
+    .login-shell {
+      width: min(100%, 1080px);
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 2rem;
+      padding: 2rem;
+    }
+
+    .login-panel {
+      display: grid;
+      align-content: center;
+      gap: 1.5rem;
+      padding: 3rem;
+      background: rgba(255,255,255,0.95);
+      border-radius: 2rem;
+      box-shadow: 0 40px 80px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .login-brand {
       display: flex;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
 
-    .login-box {
-      width: 400px;
-      padding: 40px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      animation: fadeIn 0.8s ease-in-out;
-    }
-
-    .login-box h2 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #003580;
-    }
-
-    label {
-      font-weight: 500;
-      margin-bottom: 5px;
-      display: block;
-    }
-
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px 14px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      transition: 0.3s;
-      font-size: 16px;
-    }
-
-    input:focus {
-      border-color: #004aad;
-      outline: none;
-      box-shadow: 0 0 6px rgba(0, 74, 173, 0.2);
-    }
-
-    input[type="submit"] {
-      width: 100%;
-      padding: 12px;
-      background-color: #004aad;
+    .login-brand-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 1rem;
+      display: grid;
+      place-items: center;
+      background: #2563eb;
       color: white;
+      font-size: 1.3rem;
+      box-shadow: 0 20px 50px rgba(37, 99, 235, 0.25);
+    }
+
+    .login-hero {
+      display: grid;
+      place-content: center;
+      padding: 3rem;
+      background: linear-gradient(180deg, rgba(59,130,246,0.08), rgba(248,250,252,0));
+      border-radius: 2rem;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.06);
+    }
+
+    .login-hero h2 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw, 2.75rem);
+      line-height: 1.05;
+    }
+
+    .login-hero p {
+      margin-top: 1rem;
+      color: #475569;
+      max-width: 30rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.95rem;
+      color: #475569;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-group input {
+      width: 100%;
+      border-radius: 1.25rem;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      padding: 1rem 1.1rem;
+      outline: none;
+      font-size: 0.95rem;
+      color: #0f172a;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-group input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .login-cta {
+      width: 100%;
+      border-radius: 999px;
+      padding: 1rem 1.25rem;
       border: none;
-      font-size: 18px;
-      font-weight: bold;
-      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: 0.3s;
+      transition: transform 0.2s ease, background 0.2s ease;
     }
 
-    input[type="submit"]:hover {
-      background-color: #003580;
-      transform: scale(1.02);
+    .login-cta:hover {
+      transform: translateY(-1px);
+      background: #1d4ed8;
     }
 
-    .footer-text {
+    .login-note {
+      font-size: 0.9rem;
+      color: #64748b;
       text-align: center;
-      margin-top: 20px;
-      color: #777;
-      font-size: 14px;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .login-footer {
+      display: grid;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .login-footer strong {
+      color: #0f172a;
+    }
+
+    .info-list {
+      display: grid;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .info-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-radius: 1.5rem;
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.12);
+    }
+
+    .info-item i {
+      font-size: 1.2rem;
+      color: #2563eb;
+      min-width: 2rem;
+      display: grid;
+      place-items: center;
+    }
+
+    .info-item span {
+      color: #334155;
+    }
+
+    @media (max-width: 900px) {
+      .login-shell {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="login-shell">
+    <div class="login-panel">
+      <div class="login-brand">
+        <div class="login-brand-icon">
+          <i class="fa-solid fa-hospital"></i>
+        </div>
+        <div>
+          <p class="text-slate-500 uppercase tracking-[0.35em] text-xs">MediCare</p>
+          <h1 class="text-3xl font-semibold text-slate-900">Hospital Access</h1>
+        </div>
+      </div>
 
-  <div class="login-box">
-    <h2>Hospital Management System</h2>
-    <form id="loginForm" action="dashboard.html" method="get">
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username" placeholder="Enter username" required>
+      <p class="login-note">Securely sign in to manage patients, appointments, billing, pharmacy and laboratory workflows from one central hospital dashboard.</p>
 
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" placeholder="Enter password" required>
+      <form id="loginForm" class="space-y-6">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" placeholder="admin" required>
+        </div>
 
-      <input type="submit" value="Login">
-    </form>
-    <div class="footer-text">
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="login-cta">Sign In</button>
+      </form>
+
+      <p id="loginMessage" class="login-note text-red-600 hidden"></p>
+
+      <div class="login-footer">
+        <p>Use the seeded credentials to sign in quickly.</p>
+        <p><strong>admin</strong> / <strong>admin123</strong></p>
+      </div>
+    </div>
+
+    <div class="login-hero">
+      <div>
+        <h2>Welcome to your hospital operations hub</h2>
+        <p>Monitor patient flow, coordinate care teams, and process clinical workflows with a modern hospital management experience.</p>
+
+        <div class="info-list">
+          <div class="info-item">
+            <i class="fa-solid fa-user-doctor"></i>
+            <span>Manage doctors, nurses and staff assignments.</span>
+          </div>
+          <div class="info-item">
+            <i class="fa-solid fa-notes-medical"></i>
+            <span>Create and track lab requests, sample collections, and reports.</span>
+          </div>
+          <div class="info-item">
+            <i class="fa-solid fa-pills"></i>
+            <span>Keep pharmacy inventory up to date with real-time stock control.</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-<script>
-    document.getElementById('loginForm').addEventListener('submit', function(event) {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
 
-        if (!username || !password) {
-            event.preventDefault();
-            alert('Please fill in both username and password.');
-            return;
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const loginMessage = document.getElementById('loginMessage');
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      loginMessage.classList.add('hidden');
+
+      const payload = {
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value.trim()
+      };
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          loginMessage.textContent = result.message || 'Login failed. Please try again.';
+          loginMessage.classList.remove('hidden');
+          return;
         }
 
-        // Placeholder for server-side validation
-        // Remove this block and implement server-side authentication
-        if (username !== 'chetanpatel2117' || password !== 'Chetan@2117') {
-            event.preventDefault();
-            alert('Invalid username or password.');
-        } else {
-            alert('Login successful!');
-            window.location.href = "dashoard.html";
-        }
+        localStorage.setItem('hospitalUser', JSON.stringify(result));
+        window.location.href = 'dashboard.html';
+      } catch (error) {
+        loginMessage.textContent = 'Unable to connect to the server. Please try again later.';
+        loginMessage.classList.remove('hidden');
+      }
     });
-</script>
+  </script>
 </body>
 </html>

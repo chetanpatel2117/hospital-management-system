@@ -1,43 +1,582 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hospital Management Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css">
-</head>
-<body>
-<header>
-  <span>🏥 Hospital Management System</span>
-  <div class="logout">
-    <a href="login page.html">Logout</a>
-  </div>
-</header>
-<nav>
-  <ul>
-    <li><a href="dashboard.html" class="active">Dashboard</a></li>
-    <li><a href="check up patient.html">Check Up Patient</a></li>
-    <li><a href="add emergancy case.html">Add Emergency Case</a></li>
-    <li><a href="admit patient.html">Patient Admit</a></li>
-    <li><a href="appointments.html">Appointments</a></li>
-    <li><a href="bill pay.html">Bill Pay</a></li>
-    <li><a href="my profile.html">My Profile</a></li>
-  </ul>
-</nav>
-<main>
-  <div class="dashboard-cards">
-    <div class="card"><a href="patient details.html"><h3>Total Patients</h3><p>--</p></a></div>
-    <div class="card"><a href="admit patientdetails.html"><h3>Admit Patients</h3><p>--</p></a></div>
-    <div class="card"><a href="appointment details.html"><h3>Appointment Details</h3><p>--</p></a></div>
-    <div class="card"><a href="doctor details.html"><h3>Total Doctors</h3><p>--</p></a></div>
-    <div class="card"><a href="room details.html"><h3>Room</h3><p>--</p></a></div>
-    <div class="card"><a href="emergancy case.html"><h3>Emergency Case</h3><p>--</p></a></div>
-    <div class="card"><a href="report details.html"><h3>Report Details</h3><p>--</p></a></div>
-    <div class="card"><a href="staff details.html"><h3>Staff Details</h3><p>--</p></a></div>
-    <div class="card"><a href="ICU details.html"><h3>ICU Details</h3><p>--</p></a></div>
-  </div>
-</main>
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>MediCare Dashboard</title>
+
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+	<style>
+	body{
+	background:#f5f7fb;
+	font-family:'Segoe UI',sans-serif;
+	}
+	.card {
+	background: #fff;
+	border-radius: 1rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e2e8f0;
+	}
+	/* hide scrollbar visuals while keeping scroll functionality */
+	.no-scrollbar{
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+	.no-scrollbar::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera */
+	}
+	</style>
+	</head>
+
+	<body>
+
+	<div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none md:hidden transition-opacity duration-300 z-20"></div>
+
+	<div class="flex min-h-screen">
+
+	<!-- SIDEBAR -->
+	<div id="sidebar" class="w-64 bg-gradient-to-b from-blue-900 to-blue-700 text-white flex flex-col fixed inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-30">
+
+	<div class="p-6 border-b border-blue-600">
+	<div class="flex items-center gap-3">
+	<div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-700">
+	<i class="fa-solid fa-plus text-xl"></i>
+	</div>
+
+	<div>
+	<h2 class="text-3xl font-bold">MediCare</h2>
+	<p class="text-xs text-blue-100">Hospital Management</p>
+	</div>
+	</div>
+	</div>
+
+	<nav class="mt-6 px-4 space-y-2 flex-1 min-h-0 overflow-y-auto no-scrollbar">
+
+	<a class="flex items-center gap-3 bg-blue-500 rounded-xl px-4 py-3" href="dashboard.html">
+	<i class="fa-solid fa-house"></i> Dashboard
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="patient details.html">
+	<i class="fa-solid fa-user-group"></i> Patients
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="emergancy case.html">
+	<i class="fa-solid fa-ambulance"></i> Emergency
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="doctor details.html">
+	<i class="fa-solid fa-user-doctor"></i> Doctors
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="appointment details.html">
+	<i class="fa-solid fa-calendar-days"></i> Appointments
+	</a>
+<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="ICU details.html">
+	<i class="fa-solid fa-bed"></i>ICU details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="room details.html">
+	<i class="fa-solid fa-bed"></i>Room details
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="billing.html">
+	<i class="fa-solid fa-file-invoice-dollar"></i> Billing
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="pharmacy.html">
+	<i class="fa-solid fa-capsules"></i> Pharmacy
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="laboratory.html">
+	<i class="fa-solid fa-flask"></i> Laboratory
+	</a>
+
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="report details.html">
+	<i class="fa-solid fa-chart-column"></i> Reports
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="staff details.html">
+	<i class="fa-solid fa-people-line"></i> Staff details
+	</a>
+	<a class="flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl" href="settings.html">
+	<i class="fa-solid fa-gear"></i> Settings
+	</a>
+
+	</nav>
+
+	<button type="button" data-logout class="mt-auto flex items-center gap-3 px-4 py-3 hover:bg-blue-600 rounded-xl w-full text-left">
+	<i class="fa-solid fa-power-off" ></i> Logout
+	</button>
+
+	</div>
+
+
+	<!-- MAIN -->
+	<div class="flex-1 relative overflow-auto">
+
+	<!-- TOPBAR -->
+	<div class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
+
+	<div class="flex items-center gap-4 flex-1">
+	<button id="sidebarToggle" class="text-slate-700 md:hidden p-2 rounded-xl hover:bg-slate-100">
+	<i class="fa-solid fa-bars text-xl"></i>
+	</button>
+	<div class="space-y-1">
+	<h1 class="text-4xl font-bold text-slate-800">Dashboard</h1>
+	</div>
+
+	<div class="relative hidden sm:block">
+	<input
+	type="text"
+	placeholder="Search here..."
+	class="w-72 md:w-80 bg-slate-100 rounded-xl px-10 py-3 outline-none">
+	<i class="fa-solid fa-magnifying-glass absolute left-4 top-4 text-slate-400"></i>
+	</div>
+	</div>
+
+	<div class="flex items-center gap-3">
+	<div class="relative">
+		<button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+			<i class="fa-regular fa-bell text-xl"></i>
+			<span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+		</button>
+		<div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="font-semibold text-slate-800">Notifications</h3>
+				<span class="text-xs text-blue-600">3 new</span>
+			</div>
+			<div class="space-y-2 text-sm text-slate-600">
+				<div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+				<div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+				<div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="relative">
+		<button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+			<i class="fa-regular fa-message text-xl"></i>
+			<span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+		</button>
+		<div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="font-semibold text-slate-800">Messages</h3>
+				<span class="text-xs text-blue-600">2 unread</span>
+			</div>
+			<div class="space-y-2 text-sm text-slate-600">
+				<div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+				<div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="flex items-center gap-3">
+	<img id="profileicon" src="assets/image/profile.png" class="w-12 h-12 rounded-full object-cover">
+	<div>
+	<h4 id="profileName" class="font-semibold" data-profile-name>Loading...</h4>
+	<p id="profileRole" class="text-sm text-slate-500" data-profile-role>Administrator</p>
+	</div>
+	</div>
+	</div>
+	</div>
+
+
+<!-- CONTENT -->
+<div class="pt-28 px-6 md:px-8 md:ml-64">
+
+<!-- KPI -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+
+<div class="bg-white rounded-2xl p-5 shadow-sm">
+<h4>Total Patients</h4>
+<h2 id="patientsCount" class="text-3xl font-bold mt-2">0</h2>
+<p class="text-green-500 text-sm mt-1">0%</p>
+</div>
+
+<div class="bg-white rounded-2xl p-5 shadow-sm">
+<h4>Total Doctors</h4>
+<h2 id="doctorsCount" class="text-3xl font-bold mt-2">0</h2>
+<p class="text-green-500 text-sm mt-1">0%</p>
+</div>
+
+<div class="bg-white rounded-2xl p-5 shadow-sm">
+<h4>Appointments</h4>
+<h2 id="appointmentsCount" class="text-3xl font-bold mt-2">0</h2>
+<p class="text-green-500 text-sm mt-1">0%</p>
+</div>
+
+<div class="bg-white rounded-2xl p-5 shadow-sm">
+<h4>Available Beds</h4>
+<h2 id="availableBedsCount" class="text-3xl font-bold mt-2">0</h2>
+<p class="text-red-500 text-sm mt-1">0%</p>
+</div>
+
+<div class="bg-white rounded-2xl p-5 shadow-sm">
+<h4>Total Revenue</h4>
+<h2 id="revenueAmount" class="text-3xl font-bold mt-2">₹0</h2>
+<p class="text-green-500 text-sm mt-1">0%</p>
+</div>
+
+</div>
+
+<!-- ROW -->
+<div class="grid grid-cols-20 gap-5 mt-6">
+
+<!-- TABLE -->
+<div class="col-span-7 bg-white rounded-2xl p-5">
+
+<h2 class="font-bold text-xl mb-4">Recent Patients</h2>
+
+<table class="w-full min-w-[700px]">
+
+<thead class="text-left border-b">
+<tr>
+<th class="pb-3">Patient ID</th>
+<th>Name</th>
+<th>Age</th>
+<th>Gender</th>
+<th>Disease</th>
+<th>Doctor</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="recentPatientsBody">
+
+<tr class="border-b">
+<td class="py-4">P-1001</td>
+<td>Alice Johnson</td>
+<td>34</td>
+<td>Female</td>
+<td>Diabetes</td>
+<td>Dr. Sarah</td>
+<td>
+<span class="bg-green-100 text-green-600 px-3 py-1 rounded-full">
+Admitted
+</span>
+</td>
+</tr>
+
+<tr class="border-b">
+<td class="py-4">P-1002</td>
+<td>Robert Brown</td>
+<td>45</td>
+<td>Male</td>
+<td>Hypertension</td>
+<td>Dr. Michael</td>
+<td>
+<span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
+Treatment
+</span>
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+	<!---appointment-->
+<div class="col-span-4 bg-white rounded-2xl p-5 shadow-sm ">
+	<h2 class="font-bold mb-4">Upcoming Appointments</h2>
+	<table class="w-full text-sm">
+		<tr class="border-b">
+			<th>Patient</th>
+			<th>Doctor</th>
+			<th>Date</th>
+			<th>Time</th>
+			<th>Action</th>
+		</tr>
+		<tr class="border-b">
+			<td>John Doe</td>
+			<td>Dr. Sarah Smith</td>
+			<td>2024-06-15</td>
+			<td>10:00 AM</td>
+			<td class="space-x-2 py-3">
+				<button class="px-3 py-1 rounded-full bg-green-100 text-green-700 hover:bg-green-200">Accept</button>
+				<button class="px-3 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200">Reject</button>
+			</td>
+		</tr>
+		<tr class="border-b">
+			<td>Jane Smith</td>
+			<td>Dr. Michael Lee</td>
+			<td>2024-06-16</td>
+			<td>11:30 AM</td>
+			<td class="space-x-2 py-3">
+				<button class="px-3 py-1 rounded-full bg-green-100 text-green-700 hover:bg-green-200">Accept</button>
+				<button class="px-3 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200">Reject</button>
+			</td>
+		</tr>
+	</table>
+</div>
+<!-- DOCTOR -->
+<div class="col-span-3 bg-white rounded-2xl p-6 shadow-sm">
+
+<h2 class="font-bold mb-6">
+Doctor Availability
+</h2>
+
+<div class="space-y-6">
+
+<div>
+<h4 class="font-semibold">Dr. Sarah Smith</h4>
+<p class="text-green-500 text-sm">
+Available
+</p>
+</div>
+
+<div>
+<h4 class="font-semibold">Dr. Michael Lee</h4>
+<p class="text-green-500 text-sm">
+Available
+</p>
+</div>
+
+<div>
+<h4 class="font-semibold">Dr. Emily Davis</h4>
+<p class="text-orange-500 text-sm">
+In Consultation
+</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- CHARTS -->
+<div class="grid grid-cols-12 gap-5 mt-6">
+
+<div class="col-span-4 bg-white rounded-2xl p-5 shadow-sm">
+<h2 class="font-bold mb-4">Revenue Overview</h2>
+<canvas id="revenueChart"></canvas>
+</div>
+
+<div class="col-span-4 bg-white rounded-2xl p-5 shadow-sm">
+<h2 class="font-bold mb-4">Billing & Payment</h2>
+<canvas id="paymentChart"></canvas>
+</div>
+
+<div class="col-span-4 bg-white rounded-2xl p-5 shadow-sm">
+<h2 class="font-bold mb-4">Recent Emergency Cases</h2>
+
+<div class="space-y-4">
+<div class="bg-red-50 p-3 rounded-lg">Heart Attack</div>
+<div class="bg-red-50 p-3 rounded-lg">Road Accident</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- LAST ROW -->
+<div class="grid grid-cols-12 gap-5 mt-10 ml-64">
+
+<div class="col-span-5 bg-white rounded-2xl p-5 shadow-sm">
+<h2 class="font-bold mb-4">Department Wise Patients</h2>
+<canvas id="departmentChart"></canvas>
+</div>
+
+<div class="col-span-3 bg-white rounded-2xl p-5 shadow-sm">
+<h2 class="font-bold mb-4">Lab Reports Summary</h2>
+<canvas id="labChart"></canvas>
+</div>
+
+<div class="col-span-4 bg-white rounded-2xl p-5 shadow-sm">
+
+<h2 class="font-bold mb-4">
+Pharmacy Inventory
+</h2>
+
+<table class="w-full text-sm">
+
+<tr class="border-b">
+<th>Medicine</th>
+<th>Stock</th>
+</tr>
+
+<tr class="border-b">
+<td>Paracetamol</td>
+<td>250</td>
+</tr>
+
+<tr class="border-b">
+<td>Amoxicillin</td>
+<td>45</td>
+</tr>
+
+<tr>
+<td>Omeprazole</td>
+<td>180</td>
+</tr>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="assets/js/auth.js"></script>
+<script>
+function updateProfileFromAuth() {
+  try {
+    const storedUser = localStorage.getItem('hospitalUser');
+    if (!storedUser) return;
+
+    const user = JSON.parse(storedUser);
+    const name = user.name || user.fullName || user.username || 'User';
+    const role = user.role || user.designation || 'Administrator';
+
+    const profileName = document.getElementById('profileName');
+    const profileRole = document.getElementById('profileRole');
+
+    if (profileName) profileName.textContent = name;
+    if (profileRole) profileRole.textContent = role;
+  } catch (error) {
+    console.error('Unable to read saved user profile:', error);
+  }
+}
+
+async function loadDashboardData() {
+  try {
+    const [statsRes, patientsRes, staffRes, billsRes] = await Promise.all([
+      fetch('/api/dashboard/stats'),
+      fetch('/api/patients'),
+      fetch('/api/staff'),
+      fetch('/api/bills')
+    ]);
+
+    const stats = await statsRes.json();
+    const patients = await patientsRes.json();
+    const staff = await staffRes.json();
+    const bills = await billsRes.json();
+
+    document.getElementById('patientsCount').textContent = stats.patients;
+    document.getElementById('doctorsCount').textContent = staff.length;
+    document.getElementById('appointmentsCount').textContent = stats.appointments;
+    document.getElementById('availableBedsCount').textContent = stats.availableRooms;
+    const totalRevenue = bills.reduce((sum, bill) => sum + Number(bill.paidAmount || bill.amount || 0), 0);
+    document.getElementById('revenueAmount').textContent = `₹${totalRevenue.toLocaleString()}`;
+
+    const recentPatientsBody = document.getElementById('recentPatientsBody');
+    recentPatientsBody.innerHTML = patients.slice(0, 3).map((patient) => `
+      <tr class="border-b">
+        <td class="py-3">${patient._id ? patient._id.slice(0, 6).toUpperCase() : 'N/A'}</td>
+        <td class="py-3">${patient.name}</td>
+        <td class="py-3">${patient.age || '-'}</td>
+        <td class="py-3">${patient.gender || '-'}</td>
+        <td class="py-3">${patient.condition || '-'}</td>
+        <td class="py-3"><span class="bg-green-100 text-green-600 px-3 py-1 rounded-full">${patient.status || 'Admitted'}</span></td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+new Chart(
+document.getElementById('revenueChart'),
+{
+type:'line',
+data:{
+labels:['1 May','8 May','15 May','22 May','29 May'],
+datasets:[{
+data:[50000,150000,120000,220000,245000],
+borderColor:'#2563eb',
+fill:false
+}]
+}
+}
+);
+
+new Chart(
+document.getElementById('paymentChart'),
+{
+type:'doughnut',
+data:{
+labels:['Paid','Pending','Overdue'],
+datasets:[{
+data:[75,18,7]
+}]
+}
+}
+);
+
+new Chart(
+document.getElementById('departmentChart'),
+{
+type:'bar',
+data:{
+labels:[
+'Cardiology',
+'Neurology',
+'Orthopedics',
+'Pediatrics',
+'General',
+'Dermatology',
+'Others'
+],
+datasets:[{
+data:[1850,1250,1100,950,800,650,450]
+}]
+}
+}
+);
+
+new Chart(
+document.getElementById('labChart'),
+{
+type:'doughnut',
+data:{
+labels:['Completed','Pending'],
+datasets:[{
+data:[85,15]
+}]
+}
+}
+);
+
+const notificationBtn = document.getElementById('notificationBtn');
+const notificationPanel = document.getElementById('notificationPanel');
+const messageBtn = document.getElementById('messageBtn');
+const messagePanel = document.getElementById('messagePanel');
+
+function togglePanel(panel, button) {
+  const isHidden = panel.classList.contains('hidden');
+  notificationPanel?.classList.add('hidden');
+  messagePanel?.classList.add('hidden');
+  if (isHidden) {
+    panel.classList.remove('hidden');
+  }
+}
+
+notificationBtn?.addEventListener('click', (event) => {
+  event.stopPropagation();
+  togglePanel(notificationPanel, notificationBtn);
+});
+
+messageBtn?.addEventListener('click', (event) => {
+  event.stopPropagation();
+  togglePanel(messagePanel, messageBtn);
+});
+
+document.addEventListener('click', () => {
+  notificationPanel?.classList.add('hidden');
+  messagePanel?.classList.add('hidden');
+});
+
+updateProfileFromAuth();
+loadDashboardData();
+</script>
+
 </body>
 </html>
