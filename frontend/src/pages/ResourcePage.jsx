@@ -21,15 +21,39 @@ export const pageConfigs = {
   doctors: {
     title: 'Doctor management', subtitle: 'Manage clinician profiles, specialties, and availability.', endpoint: '/api/staff', module: 'doctors', relatedEndpoint: '/api/appointments', singular: 'doctor', filter: isDoctor,
     defaults: { role: 'Doctor', availability: 'Available' },
-    fields: fields(['name', 'Doctor name', 'text', null, true], ['role', 'Role', 'text', null, true], ['specialization', 'Specialization', 'text'], ['department', 'Department', 'text'], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
+    fields: fields(['name', 'Doctor name', 'text', null, true], ['role', 'Role', 'text', null, true], ['specialization', 'Specialization', 'text'], ['department', 'Department', 'select', null, false, { endpoint: '/api/departments', value: 'name', label: (department) => department.name, filter: (department) => department.status === 'Active' }], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
     columns: [['name', 'Doctor'], ['specialization', 'Specialization'], ['department', 'Department'], ['availability', 'Availability'], ['phone', 'Contact'], ['experienceYears', 'Experience'], ['appointmentCount', 'Appointments']],
     filters: [{ key: 'department', label: 'Department' }, { key: 'availability', label: 'Availability' }]
   },
   staff: {
     title: 'Staff management', subtitle: 'Maintain workforce details and shift assignments.', endpoint: '/api/staff', module: 'staff', singular: 'staff member',
-    fields: fields(['name', 'Name', 'text', null, true], ['role', 'Role', 'text', null, true], ['department', 'Department', 'text'], ['specialization', 'Specialization', 'text'], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
+    fields: fields(['name', 'Name', 'text', null, true], ['role', 'Role', 'text', null, true], ['department', 'Department', 'select', null, false, { endpoint: '/api/departments', value: 'name', label: (department) => department.name, filter: (department) => department.status === 'Active' }], ['specialization', 'Specialization', 'text'], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
     columns: [['name', 'Name'], ['role', 'Role'], ['department', 'Department'], ['phone', 'Contact'], ['shift', 'Shift'], ['availability', 'Availability']],
     filters: [{ key: 'department', label: 'Department' }, { key: 'role', label: 'Role' }]
+  },
+  departments: {
+    title: 'Department management', subtitle: 'Maintain hospital departments and their operational contacts.', endpoint: '/api/departments', module: 'departments', singular: 'department',
+    defaults: { status: 'Active' },
+    fields: fields(['name', 'Department name', 'text', null, true], ['code', 'Department code', 'text', null, true], ['head', 'Department head'], ['phone', 'Contact phone', 'tel'], ['location', 'Location'], ['status', 'Status', 'select', ['Active', 'Inactive'], true], ['description', 'Description', 'textarea']),
+    columns: [['name', 'Department'], ['code', 'Code'], ['head', 'Department head'], ['phone', 'Contact'], ['location', 'Location'], ['status', 'Status']],
+    filters: [{ key: 'status', label: 'Status' }],
+    summary: (items) => [
+      ['Total departments', items.length],
+      ['Active', items.filter((item) => item.status === 'Active').length],
+      ['Inactive', items.filter((item) => item.status === 'Inactive').length]
+    ]
+  },
+  medicalRecords: {
+    title: 'Medical records', subtitle: 'Document consultations, diagnoses, and clinical progress.', endpoint: '/api/medical-records', module: 'medicalRecords', singular: 'medical record',
+    defaults: { recordDate: new Date().toISOString().slice(0, 10), recordType: 'Consultation' },
+    fields: fields(['patientId', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: '_id', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['recordType', 'Record type', 'select', ['Consultation', 'Diagnosis', 'Progress note', 'Prescription', 'Procedure', 'Discharge'], true], ['recordDate', 'Record date', 'date', null, true], ['title', 'Title', 'text', null, true], ['department', 'Department', 'select', null, false, { endpoint: '/api/departments', value: 'name', label: (department) => department.name, filter: (department) => department.status === 'Active' }], ['details', 'Clinical details', 'textarea', null, true]),
+    columns: [['patientName', 'Patient'], ['recordDate', 'Date'], ['recordType', 'Type'], ['title', 'Title'], ['department', 'Department'], ['recordedBy', 'Recorded by']],
+    filters: [{ key: 'recordType', label: 'Record type' }],
+    summary: (items) => [
+      ['Total records', items.length],
+      ['Consultations', items.filter((item) => item.recordType === 'Consultation').length],
+      ['Prescriptions', items.filter((item) => item.recordType === 'Prescription').length]
+    ]
   },
   appointments: {
     title: 'Appointment management', subtitle: 'Schedule, update, and track patient appointments.', endpoint: '/api/appointments', module: 'appointments', singular: 'appointment',
@@ -52,26 +76,37 @@ export const pageConfigs = {
     filters: [{ key: 'conditionLevel', label: 'Condition' }, { key: 'status', label: 'Status' }]
   },
   rooms: {
-    title: 'Rooms & beds', subtitle: 'Monitor room availability and occupancy capacity.', endpoint: '/api/rooms', module: 'rooms', singular: 'room',
+    title: 'Room management', subtitle: 'Manage wards, room types, and bed capacity.', endpoint: '/api/rooms', module: 'rooms', singular: 'room',
     filter: (row) => String(row.type).toLowerCase() !== 'icu',
     defaults: { status: 'Available', capacity: 1, type: 'General' },
-    fields: fields(['roomNumber', 'Room number', 'text', null, true], ['type', 'Room / ward type', 'select', ['General', 'Private', 'Ward', 'Isolation'], true], ['status', 'Status', 'select', ['Available', 'Occupied', 'Reserved'], true], ['capacity', 'Bed capacity', 'number', null, true], ['assignedTo', 'Assigned patient', 'text']),
-    columns: [['roomNumber', 'Room'], ['type', 'Ward'], ['capacity', 'Beds'], ['status', 'Status'], ['assignedTo', 'Assigned patient']],
+    fields: fields(['roomNumber', 'Room number', 'text', null, true], ['type', 'Room / ward type', 'select', ['General', 'Private', 'Ward', 'Isolation'], true], ['capacity', 'Bed capacity', 'number', null, true]),
+    columns: [['roomNumber', 'Room'], ['type', 'Ward'], ['capacity', 'Beds'], ['availableBeds', 'Available'], ['status', 'Occupancy'], ['assignedTo', 'Assigned patient']],
     summary: (items) => [
       ['Total rooms', items.length],
-      ['Available beds', items.filter((item) => item.status === 'Available').reduce((total, item) => total + Number(item.capacity || 1), 0)],
+      ['Available beds', items.reduce((total, item) => total + Number(item.availableBeds || 0), 0)],
       ['Occupied rooms', items.filter((item) => item.status === 'Occupied').length]
+    ]
+  },
+  beds: {
+    title: 'Bed management', subtitle: 'Allocate beds, review occupancy, and manage patient reservations.', endpoint: '/api/beds', module: 'rooms', singular: 'bed',
+    fields: fields(['status', 'Bed status', 'select', ['Available', 'Occupied', 'Reserved'], true], ['patientId', 'Patient', 'select', null, false, { endpoint: '/api/patients', value: '_id', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['notes', 'Allocation notes', 'textarea']),
+    columns: [['roomNumber', 'Room'], ['bedNumber', 'Bed'], ['status', 'Status'], ['patientName', 'Patient'], ['assignedBy', 'Assigned by']],
+    summary: (items) => [
+      ['Total beds', items.length],
+      ['Available', items.filter((item) => item.status === 'Available').length],
+      ['Occupied', items.filter((item) => item.status === 'Occupied').length],
+      ['Reserved', items.filter((item) => item.status === 'Reserved').length]
     ]
   },
   icu: {
     title: 'ICU management', subtitle: 'Track intensive-care room capacity and occupancy.', endpoint: '/api/rooms', module: 'rooms', singular: 'ICU room',
     filter: (row) => String(row.type).toLowerCase() === 'icu',
     defaults: { status: 'Available', capacity: 1, type: 'ICU' },
-    fields: fields(['roomNumber', 'ICU room number', 'text', null, true], ['status', 'Status', 'select', ['Available', 'Occupied', 'Reserved'], true], ['capacity', 'Bed capacity', 'number', null, true], ['assignedTo', 'Assigned patient', 'text']),
-    columns: [['roomNumber', 'Room'], ['capacity', 'Beds'], ['status', 'Status'], ['assignedTo', 'Assigned patient']],
+    fields: fields(['roomNumber', 'ICU room number', 'text', null, true], ['capacity', 'Bed capacity', 'number', null, true]),
+    columns: [['roomNumber', 'Room'], ['capacity', 'Beds'], ['availableBeds', 'Available'], ['status', 'Occupancy'], ['assignedTo', 'Assigned patient']],
     summary: (items) => [
       ['ICU rooms', items.length],
-      ['Available beds', items.filter((item) => item.status === 'Available').reduce((total, item) => total + Number(item.capacity || 1), 0)],
+      ['Available beds', items.reduce((total, item) => total + Number(item.availableBeds || 0), 0)],
       ['Occupied rooms', items.filter((item) => item.status === 'Occupied').length]
     ]
   },
@@ -163,8 +198,9 @@ export default function ResourcePage({ config }) {
     setError('');
     setLookupError('');
     try {
+      const lookupModules = { '/api/departments': 'departments', '/api/patients': 'patients', '/api/staff': 'doctors' };
       const lookupEndpoints = [...new Set(config.fields.map((field) => field.source?.endpoint).filter(Boolean))]
-        .filter((endpoint) => canAccessRole(user?.role, endpoint === '/api/staff' ? 'doctors' : 'patients', 'read'));
+        .filter((endpoint) => canAccessRole(user?.role, lookupModules[endpoint], 'read'));
       const results = await api(config.endpoint);
       if (!Array.isArray(results)) throw new Error(`The server returned invalid ${config.singular} records.`);
       const auxiliaryResults = await Promise.allSettled([
@@ -229,7 +265,8 @@ export default function ResourcePage({ config }) {
     : filteredRows;
   const pageCount = Math.max(1, Math.ceil(listRows.length / pageSize));
   const visibleRows = listRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const showActions = can('update') || can('delete') || ['/api/patients', '/api/appointments', '/api/lab-tests', '/api/bills'].includes(config.endpoint);
+  const canCreate = can('create') && config.endpoint !== '/api/beds';
+  const showActions = can('update') || can('delete') && config.endpoint !== '/api/beds' || ['/api/patients', '/api/appointments', '/api/lab-tests', '/api/bills'].includes(config.endpoint);
   const activeAdministratorCount = config.endpoint === '/api/users'
     ? rows.filter((row) => normalizeRole(row.role) === 'administrator' && (!row.status || /^active$/i.test(row.status))).length
     : 0;
@@ -238,7 +275,7 @@ export default function ResourcePage({ config }) {
     && activeAdministratorCount <= 1;
   const isEditingProtectedUser = config.endpoint === '/api/users' && editing
     && (editing.username === user?.username || isLastActiveAdministrator(editing));
-  const canDeleteRow = (row) => can('delete')
+  const canDeleteRow = (row) => can('delete') && config.endpoint !== '/api/beds'
     && !(config.endpoint === '/api/users' && (row.username === user?.username || isLastActiveAdministrator(row)));
 
   useEffect(() => {
@@ -313,7 +350,7 @@ export default function ResourcePage({ config }) {
     try {
       const payload = { ...form };
       delete payload._id;
-      delete payload.__v;
+      if (config.endpoint !== '/api/beds') delete payload.__v;
       if (config.endpoint === '/api/bills') {
         const chargeKeys = ['consultationCharges', 'medicineCharges', 'laboratoryCharges', 'otherCharges'];
         const itemizedAmount = chargeKeys.reduce((sum, key) => sum + Number(payload[key] || 0), 0);
@@ -324,6 +361,11 @@ export default function ResourcePage({ config }) {
         if (!editing) payload.invoiceNumber = payload.invoiceNumber || `INV-${Date.now()}`;
       }
       if (config.endpoint === '/api/users' && editing && !payload.password) delete payload.password;
+      if (config.endpoint === '/api/medical-records' && editing) {
+        delete payload.patientId;
+        delete payload.patientName;
+        delete payload.recordedBy;
+      }
       const url = editing ? `${config.endpoint}/${encodeURIComponent(editing._id)}` : config.endpoint;
       await api(url, { method: editing ? 'PUT' : 'POST', body: JSON.stringify(payload) });
       setDialogOpen(false);
@@ -350,7 +392,7 @@ export default function ResourcePage({ config }) {
 
   return (
     <>
-      <div className="page-heading"><div><span className="eyebrow">OPERATIONS</span><h1>{config.title}</h1><p>{config.subtitle}</p></div>{can('create') && <button className="primary-button" type="button" onClick={openCreate}><Plus size={16} />Add {config.singular}</button>}</div>
+      <div className="page-heading"><div><span className="eyebrow">OPERATIONS</span><h1>{config.title}</h1><p>{config.subtitle}</p></div>{canCreate && <button className="primary-button" type="button" onClick={openCreate}><Plus size={16} />Add {config.singular}</button>}</div>
       {notice && <div className="notice success" role="status">{notice}<button className="notice-dismiss" onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
       {error && !dialogOpen && <div className="notice error" role="alert">{error}<button className="notice-dismiss" onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
       {lookupError && !dialogOpen && <div className="notice error" role="alert">{lookupError}</div>}
@@ -369,13 +411,16 @@ export default function ResourcePage({ config }) {
           ? <AppointmentCalendar appointments={filteredRows} month={calendarMonth} onMonthChange={setCalendarMonth} onSelect={can('update') ? openEdit : setViewing} />
           : (
           <div className="table-wrap"><table className="data-table"><thead><tr>{config.columns.map(([key, label]) => <th key={key}>{label}</th>)}{showActions && <th>Actions</th>}</tr></thead><tbody>
-            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + Number(showActions)}>{error ? 'Records could not be loaded.' : query || appointmentDate || Object.values(filterValues).some(Boolean) ? 'No records match the current filters.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(row[key], key)}</td>)}{showActions && <td><div className="row-actions">{['/api/patients', '/api/appointments', '/api/lab-tests'].includes(config.endpoint) && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}{can('update') && <button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button>}{canDeleteRow(row) && <button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button>}</div></td>}</tr>)}
+            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + Number(showActions)}>{error ? 'Records could not be loaded.' : query || appointmentDate || Object.values(filterValues).some(Boolean) ? 'No records match the current filters.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(row[key], key)}</td>)}{showActions && <td><div className="row-actions">{['/api/patients', '/api/appointments', '/api/lab-tests', '/api/medical-records'].includes(config.endpoint) && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}{can('update') && <button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button>}{canDeleteRow(row) && <button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button>}</div></td>}</tr>)}
           </tbody></table></div>
         )}
         {!calendarMode && listRows.length > pageSize && <div className="pagination"><span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, listRows.length)} of {listRows.length}</span><div><button className="small-button" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>Previous</button><span>{currentPage} / {pageCount}</span><button className="small-button" type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => page + 1)}>Next</button></div></div>}
       </section>
       {viewing && config.endpoint === '/api/patients' && <Modal title={viewing.name || 'Patient profile'} description="Patient profile and clinical details." onClose={() => setViewing(null)} wide>
         <dl className="detail-grid">{config.fields.filter((field) => field.type !== 'checkbox').map((field) => <div key={field.name}><dt>{field.label}</dt><dd>{displayValue(viewing[field.name], field.name)}</dd></div>)}</dl>
+      </Modal>}
+      {viewing && config.endpoint === '/api/medical-records' && <Modal title={viewing.title || 'Medical record'} description="Clinical note and author details." onClose={() => setViewing(null)} wide>
+        <dl className="detail-grid"><div><dt>Patient</dt><dd>{viewing.patientName || '—'}</dd></div><div><dt>Record type</dt><dd>{viewing.recordType || '—'}</dd></div><div><dt>Record date</dt><dd>{viewing.recordDate || '—'}</dd></div><div><dt>Department</dt><dd>{viewing.department || '—'}</dd></div><div><dt>Recorded by</dt><dd>{viewing.recordedBy || '—'}</dd></div><div className="full"><dt>Clinical details</dt><dd>{viewing.details || '—'}</dd></div></dl>
       </Modal>}
       {viewing && ['/api/appointments', '/api/lab-tests'].includes(config.endpoint) && <Modal title={config.endpoint === '/api/appointments' ? 'Appointment details' : 'Laboratory record'} description="Saved record details." onClose={() => setViewing(null)} wide>
         <dl className="detail-grid">{config.fields.filter((field) => field.type !== 'checkbox').map((field) => <div key={field.name}><dt>{field.label}</dt><dd>{displayValue(viewing[field.name], field.name)}</dd></div>)}</dl>
@@ -398,7 +443,7 @@ export default function ResourcePage({ config }) {
         <form className="form-grid" onSubmit={submit}>
           {config.fields.map((field) => <label key={field.name} className={`form-field ${field.type === 'textarea' ? 'full' : ''}`}>
             <span>{field.label}</span>
-            {field.type === 'select' ? <select className="form-control" value={form[field.name] ?? ''} required={field.required} disabled={isEditingProtectedUser && ['role', 'status'].includes(field.name)} onChange={(event) => updateSelectField(field, event.target.value)}><option value="">Select {field.label.toLowerCase()}</option>{fieldOptions(field).map((option) => <option key={option.value || 'empty'} value={option.value}>{option.label}</option>)}{form[field.name] && !fieldOptions(field).some((option) => option.value === form[field.name]) && <option value={form[field.name]}>{form[field.name]} (existing)</option>}</select>
+            {field.type === 'select' ? <select className="form-control" value={form[field.name] ?? ''} required={field.required} disabled={isEditingProtectedUser && ['role', 'status'].includes(field.name) || config.endpoint === '/api/medical-records' && Boolean(editing) && field.name === 'patientId'} onChange={(event) => updateSelectField(field, event.target.value)}><option value="">Select {field.label.toLowerCase()}</option>{fieldOptions(field).map((option) => <option key={option.value || 'empty'} value={option.value}>{option.label}</option>)}{form[field.name] && !fieldOptions(field).some((option) => option.value === form[field.name]) && <option value={form[field.name]}>{form[field.name]} (existing)</option>}</select>
               : field.type === 'textarea' ? <textarea className="form-control" rows="3" value={form[field.name] ?? ''} required={field.required} onChange={(event) => updateField(field.name, event.target.value, field.type)} />
                 : field.type === 'checkbox' ? <input type="checkbox" checked={Boolean(form[field.name])} onChange={(event) => updateField(field.name, event.target.checked, field.type)} />
                   : <input className="form-control" type={field.type} min={field.type === 'number' ? '0' : undefined} minLength={field.type === 'password' ? 12 : undefined} autoComplete={field.type === 'password' ? 'new-password' : undefined} step={field.name.toLowerCase().includes('price') || field.name.toLowerCase().includes('charge') || field.name === 'paidAmount' ? '0.01' : undefined} value={form[field.name] ?? ''} required={field.required && !(field.type === 'password' && editing)} readOnly={field.readOnly || (field.name === 'invoiceNumber' && Boolean(editing)) || (field.name === 'username' && Boolean(editing))} disabled={config.endpoint === '/api/users' && editing?.username === user?.username && field.name === 'password'} onChange={(event) => updateField(field.name, event.target.value, field.type)} />}

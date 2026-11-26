@@ -21,13 +21,16 @@ const roleAliases = new Map([
 const permissions = {
   doctor: {
     dashboard: ['read'],
+    departments: ['read'],
     patients: ['read'],
+    medicalRecords: ['read', 'create', 'update'],
     appointments: ['read', 'update'],
     laboratory: ['read'],
     settings: ['read', 'update']
   },
   receptionist: {
     dashboard: ['read'],
+    departments: ['read'],
     patients: ['create', 'read', 'update', 'delete'],
     doctors: ['read'],
     appointments: ['create', 'read', 'update', 'delete'],
@@ -37,7 +40,9 @@ const permissions = {
   },
   nurse: {
     dashboard: ['read'],
+    departments: ['read'],
     patients: ['read', 'update'],
+    medicalRecords: ['read', 'create', 'update'],
     appointments: ['read'],
     rooms: ['read', 'update'],
     laboratory: ['read', 'update'],
@@ -50,6 +55,7 @@ const permissions = {
   },
   labStaff: {
     dashboard: ['read'],
+    departments: ['read'],
     patients: ['read'],
     laboratory: ['create', 'read', 'update', 'delete'],
     settings: ['read', 'update']

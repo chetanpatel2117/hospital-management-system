@@ -24,6 +24,25 @@ test('only administrators can manage user accounts', () => {
   assert.equal(hasPermission('Administrator', 'userManagement', 'create'), true);
 });
 
+test('clinical and reception roles can read departments but cannot manage them', () => {
+  for (const role of ['Doctor', 'Receptionist', 'Nurse', 'Lab Staff']) {
+    assert.equal(hasPermission(role, 'departments', 'read'), true);
+    assert.equal(hasPermission(role, 'departments', 'create'), false);
+    assert.equal(hasPermission(role, 'departments', 'update'), false);
+    assert.equal(hasPermission(role, 'departments', 'delete'), false);
+  }
+});
+
+test('doctors and nurses can manage clinical notes but not delete them', () => {
+  for (const role of ['Doctor', 'Nurse']) {
+    assert.equal(hasPermission(role, 'medicalRecords', 'read'), true);
+    assert.equal(hasPermission(role, 'medicalRecords', 'create'), true);
+    assert.equal(hasPermission(role, 'medicalRecords', 'update'), true);
+    assert.equal(hasPermission(role, 'medicalRecords', 'delete'), false);
+  }
+  assert.equal(hasPermission('Receptionist', 'medicalRecords', 'read'), false);
+});
+
 test('doctor can update appointments but cannot access billing', () => {
   assert.equal(hasPermission('Doctor', 'patients', 'read'), true);
   assert.equal(hasPermission('Doctor', 'appointments', 'update'), true);
@@ -43,6 +62,14 @@ test('nurse and clinical support roles receive only their mapped access', () => 
   assert.equal(hasPermission('Pharmacist', 'pharmacy', 'create'), true);
   assert.equal(hasPermission('Lab Technician', 'patients', 'read'), true);
   assert.equal(hasPermission('Lab Technician', 'patients', 'update'), false);
+});
+
+test('only nurses and administrators can change bed allocations', () => {
+  assert.equal(hasPermission('Nurse', 'rooms', 'update'), true);
+  assert.equal(hasPermission('Administrator', 'rooms', 'update'), true);
+  assert.equal(hasPermission('Receptionist', 'rooms', 'read'), true);
+  assert.equal(hasPermission('Receptionist', 'rooms', 'update'), false);
+  assert.equal(hasPermission('Doctor', 'rooms', 'read'), false);
 });
 
 test('unmapped roles are denied all module access', () => {

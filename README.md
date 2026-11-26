@@ -13,6 +13,7 @@ A MERN-based Hospital Management System for patient, staff, appointment, billing
 * Manage Doctors
 * Manage Patients
 * Manage Staff
+* Manage Departments
 * Manage User Accounts and Roles
 * Appointment Management
 * Billing & Payments
@@ -26,9 +27,11 @@ Appointments can be scheduled from existing patient and available-doctor records
 
 ### Current implementation boundaries
 
-Role-based page and API permissions are enforced: administrators have full access; doctors can read patients and lab records and read/update appointments; receptionists can manage patients, appointments, and billing while reading doctors and rooms; nurses can read/update patients, rooms, and lab records and read appointments; pharmacy staff manage inventory; and lab staff manage tests and read patients. Unmapped account roles are denied module access. Appointment records are linked to people by name, not user/staff IDs, so doctor appointments are not restricted to an assigned-doctor relationship.
+Role-based page and API permissions are enforced: administrators have full access; doctors can read patients and lab records, create/read/update medical records, and read/update appointments; receptionists can manage patients, appointments, and billing while reading doctors, departments, and rooms; nurses can read/update patients, rooms, and lab records and create/read/update medical records; pharmacy staff manage inventory; and lab staff manage tests and read patients and departments. Unmapped account roles are denied module access. Appointment records are linked to people by name, not user/staff IDs, so doctor appointments are not restricted to an assigned-doctor relationship. Medical records capture the patient and author; all authorized doctors and nurses can access the records because staff accounts are not linked to patient assignments.
 
-Department management, standalone medical records, notifications, payment-gateway processing, file uploads for lab reports, and per-bed patient allocation do not have corresponding APIs/data models and are not represented as working modules. Room availability is calculated from room capacity and status. Administrators can create/manage accounts and roles; passwords are stored as scrypt hashes, role/status/password changes invalidate existing sessions, and at least one active administrator is required.
+Room capacity generates individual bed slots, with legacy room-level assignments migrated to the first slot; nurses and administrators can manage bed allocations, while receptionists can read them. Occupied/reserved beds prevent room deletion, and occupied assignments cannot be duplicated. Administrators can manage departments and accounts/roles; clinical and reception roles can read department details. Department names cannot be changed while referenced and departments cannot be deleted while referenced by staff or appointments. Users can change their own password from Settings after verifying the current password. Passwords are stored as scrypt hashes, password/role/status changes revoke other active sessions, and at least one active administrator is required.
+
+Notifications, payment-gateway processing, and file uploads for lab reports are not yet integrated. Razorpay and SMTP credentials are required before those external integrations can be enabled; no placeholder transactions or notifications are generated.
 
 ## Technologies
 

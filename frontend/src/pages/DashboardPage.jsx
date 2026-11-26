@@ -71,7 +71,7 @@ export default function DashboardPage() {
     metrics.push(['Appointments', stats.appointments, CalendarDays, '', `${trends.appointments30d || 0} in 30d · ${signedCount(trends.appointments30dChange || 0)} vs prior 30d`]);
     metrics.push(['Pending appointments', stats.pendingAppointments, Activity, 'amber', 'Pending or scheduled records']);
   }
-  if (canRooms) metrics.push(['Available beds', stats.availableBeds, BedDouble, 'green', 'Based on available room capacity']);
+  if (canRooms) metrics.push(['Available beds', stats.availableBeds, BedDouble, 'green', 'Individual available bed slots']);
   if (canStaff) metrics.push(['Total staff', stats.staff, Users, 'teal', 'Current staff records']);
   if (canBilling) metrics.push(["Today's revenue", currency.format(stats.todaysRevenue), CreditCard, 'green', `${currency.format(trends.todaysRevenueChange || 0)} vs yesterday`]);
   if (canEmergency) metrics.push(['Emergency cases', stats.emergencyCases, Siren, 'amber', 'Active emergency records']);
@@ -103,7 +103,7 @@ export default function DashboardPage() {
     </ChartPanel>
   );
   if (canRooms) operationalCharts.push(
-    <ChartPanel key="beds" title="Bed occupancy" description="Capacity by room status" hasData={(charts.beds || []).some((entry) => entry.value > 0)}>
+    <ChartPanel key="beds" title="Bed occupancy" description="Individual beds by current status" hasData={(charts.beds || []).some((entry) => entry.value > 0)}>
       <ResponsiveContainer width="100%" height={220}><PieChart><Pie data={charts.beds || []} dataKey="value" nameKey="label" innerRadius={52} outerRadius={80} paddingAngle={3}>{(charts.beds || []).map((entry, index) => <Cell key={entry.label} fill={chartColors[index % chartColors.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer>
     </ChartPanel>
   );

@@ -113,6 +113,40 @@ const emergencyCaseSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Resolved'], default: 'Active' }
 }, { timestamps: true });
 
+const departmentSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true, minlength: 2, maxlength: 80 },
+  code: { type: String, required: true, unique: true, trim: true, uppercase: true, minlength: 2, maxlength: 12, match: /^[A-Z0-9-]+$/ },
+  head: { type: String, trim: true, maxlength: 100 },
+  phone: { type: String, trim: true, maxlength: 32 },
+  location: { type: String, trim: true, maxlength: 120 },
+  description: { type: String, trim: true, maxlength: 500 },
+  status: { type: String, enum: ['Active', 'Inactive'], default: 'Active' }
+}, { timestamps: true });
+
+const medicalRecordSchema = new mongoose.Schema({
+  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
+  patientName: { type: String, required: true, trim: true },
+  recordType: { type: String, enum: ['Consultation', 'Diagnosis', 'Progress note', 'Prescription', 'Procedure', 'Discharge'], required: true },
+  title: { type: String, required: true, trim: true, maxlength: 120 },
+  details: { type: String, required: true, trim: true, maxlength: 10000 },
+  recordDate: { type: String, required: true },
+  department: { type: String, trim: true, maxlength: 80 },
+  recordedBy: { type: String, required: true, trim: true }
+}, { timestamps: true });
+
+const bedSchema = new mongoose.Schema({
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  roomNumber: { type: String, required: true, trim: true },
+  bedNumber: { type: Number, required: true, min: 1 },
+  status: { type: String, enum: ['Available', 'Occupied', 'Reserved'], default: 'Available' },
+  patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', default: null },
+  patientName: { type: String, default: '', trim: true },
+  assignedBy: { type: String, default: '', trim: true },
+  notes: { type: String, default: '', maxlength: 500 }
+}, { timestamps: true });
+bedSchema.index({ roomId: 1, bedNumber: 1 }, { unique: true });
+bedSchema.index({ patientId: 1 }, { unique: true, partialFilterExpression: { status: 'Occupied', patientId: { $type: 'objectId' } } });
+
 module.exports = {
   User: mongoose.model('User', userSchema),
   Patient: mongoose.model('Patient', patientSchema),
@@ -122,5 +156,8 @@ module.exports = {
   LabTest: mongoose.model('LabTest', labTestSchema),
   Room: mongoose.model('Room', roomSchema),
   Staff: mongoose.model('Staff', staffSchema),
-  EmergencyCase: mongoose.model('EmergencyCase', emergencyCaseSchema)
+  EmergencyCase: mongoose.model('EmergencyCase', emergencyCaseSchema),
+  Department: mongoose.model('Department', departmentSchema),
+  MedicalRecord: mongoose.model('MedicalRecord', medicalRecordSchema),
+  Bed: mongoose.model('Bed', bedSchema)
 };

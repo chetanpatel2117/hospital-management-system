@@ -36,7 +36,10 @@ const {
   LabTest,
   Room,
   Staff,
-  EmergencyCase
+  EmergencyCase,
+  Department,
+  MedicalRecord,
+  Bed
 } = require('./models');
 
 async function connectDatabase() {
@@ -538,6 +541,8 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
       canReadEmergency ? EmergencyCase.find().sort({ createdAt: -1 }).lean() : Promise.resolve([]),
       canReadPharmacy ? Medicine.find().sort({ updatedAt: -1 }).lean() : Promise.resolve([])
     ]);
+    if (canReadRooms) await Promise.all(rooms.map((room) => synchronizeRoomBeds(room)));
+    const beds = canReadRooms ? await Bed.find().select('status').lean() : [];
 
     const today = new Date();
     const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -592,9 +597,7 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
       appointmentStatuses.set(status, (appointmentStatuses.get(status) || 0) + 1);
     });
 
-    const availableBeds = rooms.reduce((total, room) => (
-      room.status === 'Available' ? total + Number(room.capacity || 1) : total
-    ), 0);
+    const availableBeds = beds.filter((bed) => bed.status === 'Available').length;
     const paidTotal = bills.reduce((total, bill) => total + Number(bill.paidAmount || 0), 0);
     const todaysRevenue = bills.reduce((total, bill) => (
       bill.paymentDate === todayKey ? total + Number(bill.paidAmount || 0) : total
@@ -644,7 +647,7 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
     }
     if (canReadRooms) {
       stats.availableBeds = availableBeds;
-      stats.occupiedBeds = rooms.filter((room) => room.status === 'Occupied').reduce((total, room) => total + Number(room.capacity || 1), 0);
+      stats.occupiedBeds = beds.filter((bed) => bed.status === 'Occupied').length;
     }
     if (canReadStaff) stats.staff = staff.length;
     if (canReadBilling) {
@@ -704,8 +707,7 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
         appointmentStatuses: Array.from(appointmentStatuses, ([label, value]) => ({ label, value })),
         beds: ['Available', 'Occupied', 'Reserved'].map((status) => ({
           label: status,
-          value: rooms.filter((room) => room.status === status)
-            .reduce((total, room) => total + Number(room.capacity || 1), 0)
+          value: beds.filter((bed) => bed.status === status).length
         })),
         labStatuses,
         medicineCategories
@@ -843,8 +845,127 @@ const resourceModules = {
   'lab-tests': 'laboratory',
   rooms: 'rooms',
   staff: 'staff',
-  'emergency-cases': 'emergency'
+  'emergency-cases': 'emergency',
+  departments: 'departments',
+  'medical-records': 'medicalRecords'
 };
+
+async function synchronizeRoomBeds(room) {
+  const capacity = Number.isInteger(room.capacity) && room.capacity > 0 ? room.capacity : 1;
+  const existing = await Bed.find({ roomId: room._id }).select('bedNumber').lean();
+  const existingNumbers = new Set(existing.map((bed) => bed.bedNumber));
+  const legacyOccupied = room.status === 'Occupied' || Boolean(String(room.assignedTo || '').trim());
+  const legacyReserved = !legacyOccupied && room.status === 'Reserved';
+
+  for (let bedNumber = 1; bedNumber <= capacity; bedNumber += 1) {
+    if (existingNumbers.has(bedNumber)) continue;
+    const isLegacyFirstBed = existing.length === 0 && bedNumber === 1;
+    const status = isLegacyFirstBed && legacyOccupied
+      ? 'Occupied'
+      : isLegacyFirstBed && legacyReserved ? 'Reserved' : 'Available';
+    try {
+      await Bed.updateOne(
+        { roomId: room._id, bedNumber },
+        { $setOnInsert: {
+          roomId: room._id,
+          roomNumber: room.roomNumber,
+          bedNumber,
+          status,
+          patientName: status === 'Occupied' ? String(room.assignedTo || '').trim() : ''
+        } },
+        { upsert: true, setDefaultsOnInsert: true }
+      );
+    } catch (error) {
+      if (error.code !== 11000) throw error;
+    }
+  }
+
+  await Bed.updateMany({ roomId: room._id }, { $set: { roomNumber: room.roomNumber } });
+  const beds = await Bed.find({ roomId: room._id }).select('status patientName').lean();
+  const assignedTo = beds
+    .filter((bed) => bed.status === 'Occupied' && bed.patientName)
+    .map((bed) => bed.patientName)
+    .join(', ');
+  const summary = {
+    totalBeds: beds.length,
+    availableBeds: beds.filter((bed) => bed.status === 'Available').length,
+    occupiedBeds: beds.filter((bed) => bed.status === 'Occupied').length,
+    reservedBeds: beds.filter((bed) => bed.status === 'Reserved').length,
+    status: beds.some((bed) => bed.status === 'Occupied')
+      ? 'Occupied'
+      : beds.some((bed) => bed.status === 'Reserved') ? 'Reserved' : 'Available',
+    assignedTo
+  };
+  await Room.updateOne({ _id: room._id }, { $set: { status: summary.status, assignedTo } });
+  return summary;
+}
+
+app.get('/api/beds', requirePermission('rooms', 'read'), async (req, res) => {
+  try {
+    const rooms = await Room.find().select('_id roomNumber capacity status assignedTo');
+    await Promise.all(rooms.map((room) => synchronizeRoomBeds(room)));
+    const beds = await Bed.find().sort({ roomNumber: 1, bedNumber: 1 }).lean();
+    res.json(beds);
+  } catch (error) {
+    console.error('Unable to load bed inventory:', error.message);
+    res.status(500).json({ message: 'Unable to load bed inventory' });
+  }
+});
+
+app.put('/api/beds/:id', requirePermission('rooms', 'update'), async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid bed identifier' });
+    const bed = await Bed.findById(req.params.id);
+    if (!bed) return res.status(404).json({ message: 'Bed not found' });
+    const expectedVersion = Number(req.body?.__v);
+    if (!Number.isInteger(expectedVersion) || expectedVersion !== bed.__v) {
+      return res.status(409).json({ message: 'This bed changed since it was loaded. Refresh and try again.' });
+    }
+
+    const status = req.body.status === undefined ? bed.status : req.body.status;
+    if (!['Available', 'Occupied', 'Reserved'].includes(status)) {
+      return res.status(400).json({ message: 'Unsupported bed status' });
+    }
+
+    let patient = null;
+    if (status !== 'Available') {
+      const patientId = req.body.patientId === undefined ? bed.patientId : req.body.patientId;
+      if (patientId) {
+        if (!mongoose.isValidObjectId(patientId)) return res.status(400).json({ message: 'Select a valid patient' });
+        patient = await Patient.findById(patientId);
+        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        const duplicate = await Bed.exists({
+          _id: { $ne: bed._id },
+          patientId: patient._id,
+          status: { $in: ['Occupied', 'Reserved'] }
+        });
+        if (duplicate) return res.status(409).json({ message: 'This patient already has an active bed allocation' });
+      } else if (status === 'Occupied') {
+        return res.status(400).json({ message: 'Select a patient before marking a bed occupied' });
+      }
+    }
+
+    const updates = {
+      status,
+      patientId: status === 'Available' ? null : patient?._id || null,
+      patientName: status === 'Available' ? '' : patient?.name || (req.body.patientId === undefined ? bed.patientName : ''),
+      assignedBy: status === 'Available' ? '' : req.auth.username,
+      notes: req.body.notes === undefined ? bed.notes : req.body.notes
+    };
+    const updated = await Bed.findOneAndUpdate(
+      { _id: bed._id, __v: expectedVersion },
+      { $set: updates, $inc: { __v: 1 } },
+      { new: true, runValidators: true }
+    );
+    if (!updated) return res.status(409).json({ message: 'This bed changed since it was loaded. Refresh and try again.' });
+    await synchronizeRoomBeds(await Room.findById(updated.roomId));
+    res.json(updated);
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ message: 'This patient already occupies another bed' });
+    console.error('Unable to update bed allocation:', error.message);
+    res.status(400).json({ message: error.message || 'Unable to update bed allocation' });
+  }
+});
 
 function requireResourcePermission(routeName, action) {
   return (req, res, next) => {
@@ -862,6 +983,13 @@ function buildCrudRoutes(model, entityName, routeName) {
         ? { role: /doctor|consultant|physician/i }
         : {};
       const docs = await model.find(query).sort({ createdAt: -1 });
+      if (model === Room) {
+        const rooms = await Promise.all(docs.map(async (room) => ({
+          ...room.toObject(),
+          ...await synchronizeRoomBeds(room)
+        })));
+        return res.json(rooms);
+      }
       res.json(docs);
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -888,16 +1016,56 @@ function buildCrudRoutes(model, entityName, routeName) {
           });
         if (conflict) return res.status(409).json({ message: 'This doctor already has an appointment at that time' });
       }
-      const doc = new model(req.body);
+      let doc;
+      if (model === MedicalRecord) {
+        if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+          return res.status(400).json({ message: 'Medical record details must be sent as an object' });
+        }
+        if (!mongoose.isValidObjectId(req.body.patientId)) return res.status(400).json({ message: 'Select a valid patient' });
+        if (!validAppointmentDate(req.body.recordDate)) return res.status(400).json({ message: 'Enter a valid record date' });
+        const patient = await Patient.findById(req.body.patientId);
+        if (!patient) return res.status(404).json({ message: 'Patient not found' });
+        doc = new MedicalRecord({
+          patientId: patient._id,
+          patientName: patient.name,
+          recordType: req.body.recordType,
+          title: req.body.title,
+          details: req.body.details,
+          recordDate: req.body.recordDate,
+          department: req.body.department,
+          recordedBy: req.auth.username
+        });
+      } else {
+        doc = new model(req.body);
+      }
       await doc.save();
+      if (model === Room) {
+        const summary = await synchronizeRoomBeds(doc);
+        return res.status(201).json({ ...doc.toObject(), ...summary });
+      }
       res.status(201).json(doc);
     } catch (error) {
+      if (model === Department && error.code === 11000) {
+        return res.status(409).json({ message: 'A department with that code already exists' });
+      }
       res.status(400).json({ message: error.message });
     }
   });
 
   app.put(`/api/${routeName}/:id`, requireResourcePermission(routeName, 'update'), async (req, res) => {
     try {
+      let updatePayload = req.body;
+      if (model === Room) {
+        const currentRoom = await Room.findById(req.params.id);
+        if (!currentRoom) return res.status(404).json({ message: `${entityName} not found` });
+        if (req.body.capacity !== undefined) {
+          const capacity = Number(req.body.capacity);
+          if (!Number.isInteger(capacity) || capacity < 1) return res.status(400).json({ message: 'Room capacity must be a positive whole number' });
+          const aboveCapacity = await Bed.countDocuments({ roomId: req.params.id, bedNumber: { $gt: capacity }, status: { $ne: 'Available' } });
+          if (aboveCapacity) return res.status(409).json({ message: 'Release or relocate assigned beds before reducing room capacity' });
+          await Bed.deleteMany({ roomId: req.params.id, bedNumber: { $gt: capacity } });
+        }
+      }
       if (model === Appointment) {
         const current = await Appointment.findById(req.params.id);
         if (!current) return res.status(404).json({ message: `${entityName} not found` });
@@ -919,10 +1087,60 @@ function buildCrudRoutes(model, entityName, routeName) {
           });
         if (conflict) return res.status(409).json({ message: 'This doctor already has an appointment at that time' });
       }
-      const doc = await model.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+      if (model === MedicalRecord) {
+        if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+          return res.status(400).json({ message: 'Medical record updates must be sent as an object' });
+        }
+        if (['patientId', 'patientName', 'recordedBy'].some((field) => req.body[field] !== undefined)) {
+          return res.status(400).json({ message: 'Patient and author details cannot be changed on a medical record' });
+        }
+        if (req.body.recordDate !== undefined && !validAppointmentDate(req.body.recordDate)) {
+          return res.status(400).json({ message: 'Enter a valid record date' });
+        }
+        updatePayload = Object.fromEntries(
+          ['recordType', 'title', 'details', 'recordDate', 'department']
+            .filter((field) => req.body[field] !== undefined)
+            .map((field) => [field, req.body[field]])
+        );
+      }
+      if (model === Department) {
+        if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+          return res.status(400).json({ message: 'Department updates must be sent as an object' });
+        }
+        const current = await Department.findById(req.params.id);
+        if (!current) return res.status(404).json({ message: `${entityName} not found` });
+        if (typeof req.body.name === 'string' && req.body.name.trim() !== current.name) {
+          const [staffReferences, appointmentReferences] = await Promise.all([
+            Staff.countDocuments({ department: current.name }),
+            Appointment.countDocuments({ department: current.name })
+          ]);
+          if (staffReferences || appointmentReferences) {
+            return res.status(409).json({ message: 'This department is in use. Update its staff and appointments before renaming it.' });
+          }
+        }
+      }
+      const doc = await model.findByIdAndUpdate(req.params.id, updatePayload, { new: true, runValidators: true });
       if (!doc) return res.status(404).json({ message: `${entityName} not found` });
+      if (model === Room) {
+        if (req.body.status !== undefined || req.body.assignedTo !== undefined) {
+          const firstBed = await Bed.findOne({ roomId: doc._id }).sort({ bedNumber: 1 });
+          if (firstBed) {
+            const status = req.body.status || firstBed.status;
+            if (!['Available', 'Occupied', 'Reserved'].includes(status)) return res.status(400).json({ message: 'Unsupported room status' });
+            firstBed.status = status;
+            firstBed.patientId = null;
+            firstBed.patientName = status === 'Occupied' ? String(req.body.assignedTo ?? firstBed.patientName).trim() : '';
+            await firstBed.save();
+          }
+        }
+        const summary = await synchronizeRoomBeds(doc);
+        return res.json({ ...doc.toObject(), ...summary });
+      }
       res.json(doc);
     } catch (error) {
+      if (model === Department && error.code === 11000) {
+        return res.status(409).json({ message: 'A department with that code already exists' });
+      }
       res.status(400).json({ message: error.message });
     }
   });
@@ -938,6 +1156,24 @@ function buildCrudRoutes(model, entityName, routeName) {
             return res.status(409).json({ message: 'This doctor has appointment records. Reassign or remove those appointments before deleting the doctor.' });
           }
         }
+      }
+      if (model === Department) {
+        const department = await Department.findById(req.params.id);
+        if (!department) return res.status(404).json({ message: `${entityName} not found` });
+        const [staffReferences, appointmentReferences] = await Promise.all([
+          Staff.countDocuments({ department: department.name }),
+          Appointment.countDocuments({ department: department.name })
+        ]);
+        if (staffReferences || appointmentReferences) {
+          return res.status(409).json({ message: 'This department is in use. Update or reassign its staff and appointments before deleting it.' });
+        }
+      }
+      if (model === Room) {
+        const room = await Room.findById(req.params.id);
+        if (!room) return res.status(404).json({ message: `${entityName} not found` });
+        const activeBeds = await Bed.exists({ roomId: req.params.id, status: { $in: ['Occupied', 'Reserved'] } });
+        if (activeBeds) return res.status(409).json({ message: 'Reassign or release occupied and reserved beds before deleting this room' });
+        await Bed.deleteMany({ roomId: req.params.id });
       }
       const doc = await model.findByIdAndDelete(req.params.id);
       if (!doc) return res.status(404).json({ message: `${entityName} not found` });
@@ -956,6 +1192,8 @@ buildCrudRoutes(LabTest, 'Lab Test', 'lab-tests');
 buildCrudRoutes(Room, 'Room', 'rooms');
 buildCrudRoutes(Staff, 'Staff', 'staff');
 buildCrudRoutes(EmergencyCase, 'Emergency case', 'emergency-cases');
+buildCrudRoutes(Department, 'Department', 'departments');
+buildCrudRoutes(MedicalRecord, 'Medical record', 'medical-records');
 
 app.get('/api/profile/:username', requirePermission('settings', 'read'), async (req, res) => {
   try {
@@ -1063,10 +1301,13 @@ const pageRoutes = new Set([
   'billing.html',
   'dashboard.html',
   'doctor details.html',
+  'departments.html',
   'emergancy case.html',
   'ICU details.html',
+  'bed-management.html',
   'laboratory.html',
   'login page.html',
+  'medical-records.html',
   'patient details.html',
   'pharmacy.html',
   'report details.html',
