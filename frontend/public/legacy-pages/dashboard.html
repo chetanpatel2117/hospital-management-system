@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Hospital overview | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html">
+        <span class="brand-mark"><i class="fa-solid fa-hospital" aria-hidden="true"></i></span>
+        <span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span>
+      </a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a class="active" aria-current="page" href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+          <div>
+            <p class="topbar-title">Hospital overview</p>
+            <p class="topbar-subtitle" id="todayLabel"></p>
+          </div>
+        </div>
+        <div class="topbar-user">
+          <span class="avatar"><img id="profileImage" src="assets/image/profile.png" alt=""></span>
+          <span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow">Operations at a glance</div>
+            <h1>Good day, <span id="greetingName">there</span></h1>
+            <p>Current activity across your hospital, based on saved records.</p>
+          </div>
+          <a class="primary-button" href="appointment details.html"><i class="fa-solid fa-plus"></i>Schedule appointment</a>
+        </section>
+
+        <p class="notice error" id="dashboardError" role="alert" hidden></p>
+
+        <section class="metric-grid" aria-label="Hospital statistics">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Total patients</span><span class="metric-icon"><i class="fa-solid fa-user-group"></i></span></div><div class="metric-value" data-stat="patients">—</div><div class="metric-note">Registered patient records</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Total doctors</span><span class="metric-icon teal"><i class="fa-solid fa-user-doctor"></i></span></div><div class="metric-value" data-stat="doctors">—</div><div class="metric-note">Doctors listed in staff records</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Appointments</span><span class="metric-icon"><i class="fa-solid fa-calendar-check"></i></span></div><div class="metric-value" data-stat="appointments">—</div><div class="metric-note">All recorded appointments</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Available beds</span><span class="metric-icon green"><i class="fa-solid fa-bed"></i></span></div><div class="metric-value" data-stat="availableBeds">—</div><div class="metric-note">Capacity in available rooms</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Total staff</span><span class="metric-icon teal"><i class="fa-solid fa-people-group"></i></span></div><div class="metric-value" data-stat="staff">—</div><div class="metric-note">Active staff records</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Today's revenue</span><span class="metric-icon green"><i class="fa-solid fa-indian-rupee-sign"></i></span></div><div class="metric-value" data-stat="todaysRevenue">—</div><div class="metric-note">Payments with a recorded payment date</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Pending appointments</span><span class="metric-icon amber"><i class="fa-regular fa-clock"></i></span></div><div class="metric-value" data-stat="pendingAppointments">—</div><div class="metric-note">Scheduled or pending status</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Emergency cases</span><span class="metric-icon amber"><i class="fa-solid fa-truck-medical"></i></span></div><div class="metric-value" data-stat="emergencyCases">—</div><div class="metric-note">Active cases in emergency records</div></article>
+        </section>
+
+        <section class="section-grid two" aria-label="Admissions and revenue charts">
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Patient admissions</h2><p>New patient records by month</p></div><span class="status-pill">Last 6 months</span></div>
+            <div class="chart-wrap"><canvas id="patientAdmissionsChart" aria-label="Monthly patient admissions chart"></canvas><div class="chart-empty" data-chart-empty hidden>No patient admission data for this period.</div></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Payments recorded</h2><p>Paid amounts grouped by payment month</p></div><i class="fa-solid fa-chart-line" style="color:var(--teal)"></i></div>
+            <div class="chart-wrap"><canvas id="revenueChart" aria-label="Monthly recorded payment chart"></canvas><div class="chart-empty" data-chart-empty hidden>No payment records for this period.</div></div>
+            <p class="muted-note">Only bills with a recorded payment date are included.</p>
+          </article>
+        </section>
+
+        <section class="section-grid three" aria-label="Appointment, department and bed analytics">
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Appointment status</h2><p>Distribution of saved appointments</p></div></div>
+            <div class="chart-wrap"><canvas id="appointmentChart" aria-label="Appointment status chart"></canvas><div class="chart-empty" data-chart-empty hidden>No appointment data yet.</div></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Patients by department</h2><p>Based on patient condition field</p></div></div>
+            <div class="chart-wrap"><canvas id="departmentChart" aria-label="Patients by department chart"></canvas><div class="chart-empty" data-chart-empty hidden>No department data yet.</div></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Room capacity</h2><p>Bed capacity grouped by room status</p></div></div>
+            <div class="chart-wrap"><canvas id="bedChart" aria-label="Bed capacity chart"></canvas><div class="chart-empty" data-chart-empty hidden>No room capacity data yet.</div></div>
+          </article>
+        </section>
+
+        <section class="section-grid two" aria-label="Recent activity">
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Recent patient registrations</h2><p>Latest records added to the patient directory</p></div><a class="panel-link" href="patient details.html">View patients <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Patient</th><th>Age / gender</th><th>Department / condition</th><th>Status</th></tr></thead><tbody id="recentPatientsBody"><tr><td class="empty-row" colspan="4">Loading patient records…</td></tr></tbody></table></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Today's appointments</h2><p>Appointments scheduled for today</p></div><a class="panel-link" href="appointment details.html">Manage <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead><tbody id="todayAppointmentsBody"><tr><td class="empty-row" colspan="4">Loading appointments…</td></tr></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="section-grid two">
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Recent billing activity</h2><p>Latest invoices and recorded payments</p></div><a class="panel-link" href="billing.html">Open billing <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Invoice</th><th>Patient</th><th>Amount</th><th>Status</th></tr></thead><tbody id="transactionsBody"><tr><td class="empty-row" colspan="4">Loading billing records…</td></tr></tbody></table></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Doctor availability</h2><p>Availability and shifts saved in staff records</p></div><a class="panel-link" href="doctor details.html">View doctors <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Doctor</th><th>Department</th><th>Availability</th><th>Shift</th></tr></thead><tbody id="doctorsBody"><tr><td class="empty-row" colspan="4">Loading doctor records…</td></tr></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="section-grid two">
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Emergency overview</h2><p>Emergency activity tracking</p></div></div>
+            <div class="notice" id="emergencyEmpty">No active emergency cases are currently recorded.</div>
+            <div class="table-wrap" id="emergencyTableWrap" hidden><table class="data-table"><thead><tr><th>Patient</th><th>Emergency</th><th>Condition</th></tr></thead><tbody id="emergencyBody"></tbody></table></div>
+            <a class="panel-link" href="emergancy case.html">Open emergency page <i class="fa-solid fa-arrow-right"></i></a>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><h2>Laboratory status</h2><p>Test records by current status</p></div><a class="panel-link" href="laboratory.html">Open laboratory <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="chart-wrap"><canvas id="labChart" aria-label="Laboratory status chart"></canvas><div class="chart-empty" data-chart-empty hidden>No laboratory records yet.</div></div>
+          </article>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const numberFormat = new Intl.NumberFormat('en-IN');
+    const currencyFormat = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const colorSet = ['#2563a6', '#0f8b8d', '#70b6a2', '#e3a34b', '#a8bdd0', '#7466a8'];
+    const charts = [];
+
+    function showEmptyRow(target, text, columns) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = columns;
+      cell.className = 'empty-row';
+      cell.textContent = text;
+      row.appendChild(cell);
+      target.replaceChildren(row);
+    }
+
+    function addRow(target, values, statusIndex) {
+      const row = document.createElement('tr');
+      values.forEach((value, index) => {
+        const cell = document.createElement('td');
+        if (index === statusIndex) {
+          const pill = document.createElement('span');
+          const normalized = String(value || '').toLowerCase();
+          pill.className = `status-pill${/paid|completed|confirmed|recovered|available/.test(normalized) ? ' success' : /pending|scheduled|progress|admitted/.test(normalized) ? ' warning' : /cancel|failed|critical/.test(normalized) ? ' danger' : ''}`;
+          pill.textContent = value || 'Unspecified';
+          cell.appendChild(pill);
+        } else {
+          cell.textContent = value === undefined || value === null || value === '' ? '—' : String(value);
+        }
+        row.appendChild(cell);
+      });
+      target.appendChild(row);
+    }
+
+    function renderChart(canvasId, labels, values, type, options) {
+      const canvas = document.getElementById(canvasId);
+      const empty = canvas.parentElement.querySelector('[data-chart-empty]');
+      const hasValues = Array.isArray(values) && values.some((value) => Number(value) > 0);
+      if (!hasValues) {
+        canvas.hidden = true;
+        empty.hidden = false;
+        return;
+      }
+
+      canvas.hidden = false;
+      empty.hidden = true;
+      const isCircular = type === 'doughnut';
+      const chart = new Chart(canvas, {
+        type,
+        data: {
+          labels,
+          datasets: [{
+            label: options.label,
+            data: values,
+            backgroundColor: isCircular ? colorSet : options.backgroundColor,
+            borderColor: isCircular ? '#fff' : options.borderColor,
+            borderWidth: isCircular ? 2 : 2,
+            borderRadius: isCircular ? 0 : 5,
+            fill: type === 'line' ? false : undefined,
+            tension: type === 'line' ? 0.35 : undefined,
+            pointRadius: type === 'line' ? 3 : undefined
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: isCircular, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 14, font: { size: 10 } } },
+            tooltip: { callbacks: options.currency ? { label: (context) => ` ${currencyFormat.format(context.raw)}` } : {} }
+          },
+          scales: isCircular ? {} : {
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { beginAtZero: true, grid: { color: '#edf1f5' }, ticks: { color: '#64748b', precision: 0, font: { size: 10 }, callback: options.currency ? (value) => currencyFormat.format(value) : undefined } }
+          }
+        }
+      });
+      charts.push(chart);
+    }
+
+    function renderOverview(data) {
+      const { stats, charts: chartData } = data;
+      document.querySelectorAll('[data-stat]').forEach((element) => {
+        const value = stats[element.dataset.stat];
+        element.textContent = value === null || value === undefined
+          ? '—'
+          : element.dataset.stat === 'todaysRevenue' ? currencyFormat.format(value) : numberFormat.format(value);
+      });
+
+      const patientsBody = document.getElementById('recentPatientsBody');
+      if (!data.recentPatients.length) {
+        showEmptyRow(patientsBody, 'No patient records yet.', 4);
+      } else {
+        patientsBody.replaceChildren();
+        data.recentPatients.forEach((patient) => addRow(patientsBody, [
+          patient.name,
+          [patient.age, patient.gender].filter(Boolean).join(' / ') || '—',
+          patient.condition || 'Unspecified',
+          patient.status || 'Unspecified'
+        ], 3));
+      }
+
+      const appointmentsBody = document.getElementById('todayAppointmentsBody');
+      if (!data.todaysAppointments.length) {
+        showEmptyRow(appointmentsBody, 'No appointments scheduled for today.', 4);
+      } else {
+        appointmentsBody.replaceChildren();
+        data.todaysAppointments.forEach((appointment) => addRow(appointmentsBody, [
+          appointment.time,
+          appointment.patientName,
+          appointment.doctorName,
+          appointment.status || 'Scheduled'
+        ], 3));
+      }
+
+      const transactionsBody = document.getElementById('transactionsBody');
+      if (!data.recentTransactions.length) {
+        showEmptyRow(transactionsBody, 'No billing records yet.', 4);
+      } else {
+        transactionsBody.replaceChildren();
+        data.recentTransactions.forEach((bill) => addRow(transactionsBody, [
+          bill.invoiceNumber,
+          bill.patientName,
+          currencyFormat.format(Number(bill.amount || 0)),
+          bill.status
+        ], 3));
+      }
+
+      const doctorsBody = document.getElementById('doctorsBody');
+      if (!data.doctors.length) {
+        showEmptyRow(doctorsBody, 'No doctor roles found in staff records.', 4);
+      } else {
+        doctorsBody.replaceChildren();
+        data.doctors.forEach((doctor) => addRow(doctorsBody, [doctor.name, doctor.department, doctor.availability, doctor.shift], 2));
+      }
+
+      const emergencyBody = document.getElementById('emergencyBody');
+      const emergencyTableWrap = document.getElementById('emergencyTableWrap');
+      const emergencyEmpty = document.getElementById('emergencyEmpty');
+      if (data.recentEmergencyCases.length) {
+        emergencyBody.replaceChildren();
+        data.recentEmergencyCases.forEach((item) => addRow(emergencyBody, [item.patientName, item.emergencyType, item.conditionLevel], 2));
+        emergencyTableWrap.hidden = false;
+        emergencyEmpty.hidden = true;
+      } else {
+        emergencyTableWrap.hidden = true;
+        emergencyEmpty.hidden = false;
+      }
+
+      renderChart('patientAdmissionsChart', chartData.months, chartData.patientAdmissions, 'line', {
+        label: 'New patient records', borderColor: '#2563a6', backgroundColor: 'rgba(37,99,166,.12)'
+      });
+      renderChart('revenueChart', chartData.months, chartData.paidAmountsByBillMonth, 'bar', {
+        label: 'Paid amount', borderColor: '#0f8b8d', backgroundColor: '#5ab7ad', currency: true
+      });
+      renderChart('appointmentChart', chartData.appointmentStatuses.map((item) => item.label), chartData.appointmentStatuses.map((item) => item.value), 'doughnut', {});
+      renderChart('departmentChart', chartData.departments.map((item) => item.label), chartData.departments.map((item) => item.value), 'bar', {
+        label: 'Patients', borderColor: '#2563a6', backgroundColor: '#6e9fc6'
+      });
+      renderChart('bedChart', chartData.beds.map((item) => item.label), chartData.beds.map((item) => item.value), 'doughnut', {});
+      renderChart('labChart', chartData.labStatuses.map((item) => item.label), chartData.labStatuses.map((item) => item.value), 'doughnut', {});
+    }
+
+    async function loadDashboard() {
+      const errorNotice = document.getElementById('dashboardError');
+      try {
+        const response = await fetch('/api/dashboard/overview');
+        if (!response.ok) throw new Error(response.status === 401 ? 'Your session has expired. Please sign in again.' : 'Unable to load hospital dashboard data.');
+        renderOverview(await response.json());
+      } catch (error) {
+        errorNotice.textContent = error.message;
+        errorNotice.hidden = false;
+      }
+    }
+
+    const now = new Date();
+    document.getElementById('todayLabel').textContent = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let currentUser = {};
+    try {
+      currentUser = JSON.parse(localStorage.getItem('hospitalUser') || '{}');
+    } catch (error) {
+      console.error('Unable to read the saved user profile:', error);
+    }
+    const greetingName = currentUser.name || currentUser.username || 'there';
+    document.getElementById('greetingName').textContent = greetingName.split(' ')[0];
+    if (currentUser.photo) document.getElementById('profileImage').src = currentUser.photo;
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+
+    window.addEventListener('beforeunload', () => charts.forEach((chart) => chart.destroy()));
+    loadDashboard();
+  </script>
+</body>
+</html>

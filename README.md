@@ -1,6 +1,6 @@
-# 🏥 Hospital Management System
+# Hospital Management System
 
-A modern **Hospital Management System (HMS)** developed to simplify hospital operations, improve patient management, and streamline administrative tasks. This web-based application provides an intuitive dashboard for managing patients, doctors, appointments, billing, laboratory reports, and more.
+A MERN-based Hospital Management System for patient, staff, appointment, billing, pharmacy, laboratory, and room operations. The React client uses the existing Express API, MongoDB models, and cookie-based authentication.
 
 ---
 
@@ -18,6 +18,8 @@ A modern **Hospital Management System (HMS)** developed to simplify hospital ope
 * Laboratory Management
 * Pharmacy Management
 * Reports & Analytics
+
+Billing supports itemized invoices, recorded payment methods, searchable billing history, and printable invoices. Pharmacy inventory uses live database records for stock and expiry metrics and supports create, edit, and delete operations. Laboratory totals are derived from persisted test requests; daily billing revenue is based only on bills with a recorded payment date.
 
 ### 🩺 Doctor Module
 
@@ -40,37 +42,45 @@ A modern **Hospital Management System (HMS)** developed to simplify hospital ope
 * Medicine Stock Management
 * Prescription Verification
 
-## 🚀 Technologies Used
+## Technologies
 
-### Frontend
+* **Frontend:** React, Vite, React Router, Recharts, Lucide
+* **Backend:** Node.js, Express
+* **Database:** MongoDB with Mongoose
+* **Authentication:** Server-verified sessions in HttpOnly cookies
 
-* HTML
-* CSS
-* Tailwind CSS
-* JavaScript
+The project is separated into `frontend/` (React client and legacy page fallback) and `backend/` (Express API, MongoDB models, and environment configuration). Root `package.json` provides convenience scripts only.
+Use Node.js 20.19 or newer.
 
-### Backend
+## 🔐 Configuration and first run
 
-* node.js
-* express.js
+Copy `backend/.env.example` to `backend/.env` and set a unique `ADMIN_PASSWORD` before starting with a new database. The administrator account is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD` only when the user collection is empty. Existing legacy plaintext passwords are upgraded to a salted scrypt hash after a successful login.
 
-### Database
+Set a long, private `SESSION_SECRET` for deployments and keep `.env` out of source control. Demo patient and operational records are not created by default; set `SEED_DEMO_DATA=true` only when you explicitly want sample data in a non-production environment.
 
-* mongoDB
+MongoDB must be available at `MONGODB_URI`. Install both application folders' dependencies:
 
-### Tools
+```powershell
+npm run install:all
+```
 
-* Git & GitHub
-* VS Code
+For development, run the API and React client in separate terminals:
 
+```powershell
+npm run dev:backend
+npm run dev:frontend
+```
 
-## 🔐 Default Login (Example)
+Open `http://localhost:5173`; Vite proxies `/api` and `/assets` to the Express server on port 3000.
 
-| Role    | Email                                             | Password   |
-| ------- | ------------------------------------------------- | ---------- |
-| Admin   | [admin@example.com](mailto:admin@example.com)     | admin123   |
+For a production-style run, build React and start Express:
 
-> Update these credentials according to your project.
+```powershell
+npm run build
+npm start
+```
+
+Express serves the compiled client and preserves the existing `.html` page URLs as React route aliases. The legacy HTML files remain available as a fallback if the React build has not been generated.
 
 ---
 

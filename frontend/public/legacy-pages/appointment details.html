@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Appointments | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a class="active" aria-current="page" href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+          <div><p class="topbar-title">Appointments</p><p class="topbar-subtitle">Coordinate patient visits and care teams</p></div>
+        </div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading">
+          <div><div class="eyebrow">Care coordination</div><h1>Appointment management</h1><p>Schedule, reschedule and track appointments stored in your hospital database.</p></div>
+          <button class="primary-button" id="addAppointmentButton" type="button"><i class="fa-solid fa-plus"></i>Schedule appointment</button>
+        </section>
+
+        <section class="table-panel" style="padding:18px">
+          <p class="notice error" id="pageError" role="alert" hidden></p>
+          <div class="toolbar">
+            <label class="sr-only" for="appointmentSearch">Search appointments</label>
+            <input class="search-field" id="appointmentSearch" type="search" placeholder="Search patient, doctor or department">
+            <label class="sr-only" for="statusFilter">Filter by status</label>
+            <select class="filter-field" id="statusFilter">
+              <option value="">All statuses</option><option>Scheduled</option><option>Pending</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option>
+            </select>
+            <span style="margin-left:auto;color:var(--muted);font-size:11px" id="resultCount" aria-live="polite"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Patient</th><th>Doctor</th><th>Department</th><th>Date &amp; time</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="appointmentRows"><tr><td class="empty-row" colspan="6">Loading appointments…</td></tr></tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:14px">
+            <button class="secondary-button" id="previousPage" type="button">Previous</button>
+            <span id="pageLabel" style="color:var(--muted);font-size:11px"></span>
+            <button class="secondary-button" id="nextPage" type="button">Next</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="appointmentModal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-heading">
+        <div><h2 id="modalTitle">Schedule appointment</h2><p>Appointment details are saved to the hospital record.</p></div>
+        <button class="close-button" id="closeModal" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="notice error" id="formError" role="alert" hidden></p>
+      <form id="appointmentForm">
+        <div class="form-grid">
+          <div class="form-field"><label for="patientName">Patient</label><input class="form-control" id="patientName" name="patientName" list="patientOptions" autocomplete="off" required><datalist id="patientOptions"></datalist></div>
+          <div class="form-field"><label for="doctorName">Doctor</label><select class="form-control" id="doctorName" name="doctorName" required><option value="">Select a doctor</option></select></div>
+          <div class="form-field"><label for="appointmentDepartment">Department</label><input class="form-control" id="appointmentDepartment" name="department" required></div>
+          <div class="form-field"><label for="appointmentStatus">Status</label><select class="form-control" id="appointmentStatus" name="status"><option>Scheduled</option><option>Pending</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select></div>
+          <div class="form-field"><label for="appointmentDate">Date</label><input class="form-control" id="appointmentDate" name="date" type="date" required></div>
+          <div class="form-field"><label for="appointmentTime">Time</label><input class="form-control" id="appointmentTime" name="time" type="time" required></div>
+        </div>
+        <div class="form-actions"><button class="secondary-button" id="cancelModal" type="button">Cancel</button><button class="primary-button" id="saveAppointment" type="submit">Save appointment</button></div>
+      </form>
+    </section>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const appointmentRows = document.getElementById('appointmentRows');
+    const appointmentForm = document.getElementById('appointmentForm');
+    const appointmentModal = document.getElementById('appointmentModal');
+    const appointmentSearch = document.getElementById('appointmentSearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const pageError = document.getElementById('pageError');
+    const formError = document.getElementById('formError');
+    const pageSize = 10;
+    let appointments = [];
+    let patients = [];
+    let doctors = [];
+    let editingId = null;
+    let currentPage = 1;
+
+    async function requestJson(url, options) {
+      const response = await fetch(url, options);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || 'The request could not be completed.');
+      return result;
+    }
+
+    function showNotice(target, message) {
+      target.textContent = message;
+      target.hidden = !message;
+    }
+
+    function createCell(row, value, status) {
+      const cell = document.createElement('td');
+      if (status) {
+        const pill = document.createElement('span');
+        const key = String(value || '').toLowerCase();
+        pill.className = `status-pill${/confirmed|completed/.test(key) ? ' success' : /scheduled|pending/.test(key) ? ' warning' : /cancel/.test(key) ? ' danger' : ''}`;
+        pill.textContent = value || 'Scheduled';
+        cell.appendChild(pill);
+      } else {
+        cell.textContent = value || '—';
+      }
+      row.appendChild(cell);
+    }
+
+    function renderAppointments() {
+      const query = appointmentSearch.value.trim().toLowerCase();
+      const selectedStatus = statusFilter.value.toLowerCase();
+      const filtered = appointments.filter((appointment) => {
+        const matchesSearch = [appointment.patientName, appointment.doctorName, appointment.department]
+          .some((value) => String(value || '').toLowerCase().includes(query));
+        return matchesSearch && (!selectedStatus || String(appointment.status || '').toLowerCase() === selectedStatus);
+      });
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      currentPage = Math.min(currentPage, totalPages);
+      const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+      document.getElementById('resultCount').textContent = `${filtered.length} appointment${filtered.length === 1 ? '' : 's'}`;
+      document.getElementById('pageLabel').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('previousPage').disabled = currentPage <= 1;
+      document.getElementById('nextPage').disabled = currentPage >= totalPages;
+      if (!visible.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.className = 'empty-row';
+        cell.colSpan = 6;
+        cell.textContent = 'No appointments match your search.';
+        row.appendChild(cell);
+        appointmentRows.replaceChildren(row);
+        return;
+      }
+
+      appointmentRows.replaceChildren();
+      visible.forEach((appointment) => {
+        const row = document.createElement('tr');
+        createCell(row, appointment.patientName);
+        createCell(row, appointment.doctorName);
+        createCell(row, appointment.department);
+        createCell(row, `${appointment.date} · ${appointment.time}`);
+        createCell(row, appointment.status || 'Scheduled', true);
+        const actions = document.createElement('td');
+        const group = document.createElement('div');
+        group.className = 'row-actions';
+        const edit = document.createElement('button');
+        edit.className = 'small-button';
+        edit.type = 'button';
+        edit.textContent = 'Edit';
+        edit.addEventListener('click', () => openModal(appointment));
+        group.appendChild(edit);
+        if (!/^(cancelled|completed)$/i.test(appointment.status || '')) {
+          const cancel = document.createElement('button');
+          cancel.className = 'small-button';
+          cancel.type = 'button';
+          cancel.textContent = 'Cancel';
+          cancel.addEventListener('click', () => updateStatus(appointment, 'Cancelled'));
+          group.appendChild(cancel);
+        }
+        const remove = document.createElement('button');
+        remove.className = 'small-button';
+        remove.type = 'button';
+        remove.textContent = 'Delete';
+        remove.addEventListener('click', () => deleteAppointment(appointment));
+        group.appendChild(remove);
+        actions.appendChild(group);
+        row.appendChild(actions);
+        appointmentRows.appendChild(row);
+      });
+    }
+
+    async function loadAppointments() {
+      try {
+        const [savedAppointments, savedPatients, staff] = await Promise.all([
+          requestJson('/api/appointments'),
+          requestJson('/api/patients'),
+          requestJson('/api/staff')
+        ]);
+        appointments = savedAppointments;
+        patients = savedPatients;
+        doctors = staff.filter((member) => /doctor|consultant|physician/i.test(member.role || ''));
+        const patientOptions = document.getElementById('patientOptions');
+        patientOptions.replaceChildren();
+        patients.forEach((patient) => {
+          const option = document.createElement('option');
+          option.value = patient.name;
+          patientOptions.appendChild(option);
+        });
+        const doctorSelect = document.getElementById('doctorName');
+        doctorSelect.replaceChildren(new Option('Select a doctor', ''));
+        doctors.forEach((doctor) => doctorSelect.add(new Option(`${doctor.name} · ${doctor.specialization || doctor.department || doctor.role}`, doctor.name)));
+        renderAppointments();
+      } catch (error) {
+        showNotice(pageError, error.message);
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.className = 'empty-row';
+        cell.colSpan = 6;
+        cell.textContent = 'Unable to load appointment records.';
+        row.appendChild(cell);
+        appointmentRows.replaceChildren(row);
+      }
+    }
+
+    function openModal(appointment) {
+      editingId = appointment ? appointment._id : null;
+      appointmentForm.reset();
+      showNotice(formError, '');
+      document.getElementById('modalTitle').textContent = appointment ? 'Edit appointment' : 'Schedule appointment';
+      document.getElementById('saveAppointment').textContent = appointment ? 'Save changes' : 'Save appointment';
+      if (appointment) {
+        document.getElementById('patientName').value = appointment.patientName || '';
+        document.getElementById('doctorName').value = appointment.doctorName || '';
+        document.getElementById('appointmentDepartment').value = appointment.department || '';
+        document.getElementById('appointmentStatus').value = appointment.status || 'Scheduled';
+        document.getElementById('appointmentDate').value = appointment.date || '';
+        document.getElementById('appointmentTime').value = appointment.time || '';
+      } else {
+        document.getElementById('appointmentStatus').value = 'Scheduled';
+        document.getElementById('appointmentDate').min = new Date().toISOString().slice(0, 10);
+      }
+      appointmentModal.hidden = false;
+      document.getElementById('patientName').focus();
+    }
+
+    function closeModal() {
+      appointmentModal.hidden = true;
+      editingId = null;
+    }
+
+    async function updateStatus(appointment, status) {
+      try {
+        await requestJson(`/api/appointments/${appointment._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...appointment, status })
+        });
+        showNotice(pageError, '');
+        await loadAppointments();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    async function deleteAppointment(appointment) {
+      if (!window.confirm(`Permanently delete the appointment for ${appointment.patientName}?`)) return;
+      try {
+        await requestJson(`/api/appointments/${appointment._id}`, { method: 'DELETE' });
+        showNotice(pageError, '');
+        await loadAppointments();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    document.getElementById('addAppointmentButton').addEventListener('click', () => openModal(null));
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('cancelModal').addEventListener('click', closeModal);
+    appointmentModal.addEventListener('click', (event) => {
+      if (event.target === appointmentModal) closeModal();
+    });
+    appointmentSearch.addEventListener('input', () => { currentPage = 1; renderAppointments(); });
+    statusFilter.addEventListener('change', () => { currentPage = 1; renderAppointments(); });
+    document.getElementById('previousPage').addEventListener('click', () => { currentPage -= 1; renderAppointments(); });
+    document.getElementById('nextPage').addEventListener('click', () => { currentPage += 1; renderAppointments(); });
+
+    appointmentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(appointmentForm));
+      payload.patientName = payload.patientName.trim();
+      payload.status = payload.status || 'Scheduled';
+      const saveButton = document.getElementById('saveAppointment');
+      saveButton.disabled = true;
+      try {
+        await requestJson(editingId ? `/api/appointments/${editingId}` : '/api/appointments', {
+          method: editingId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        closeModal();
+        showNotice(pageError, '');
+        await loadAppointments();
+      } catch (error) {
+        showNotice(formError, error.message);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+
+    loadAppointments();
+  </script>
+</body>
+</html>

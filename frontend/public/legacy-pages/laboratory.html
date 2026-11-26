@@ -1,0 +1,742 @@
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>MediCare Dashboard</title>
+
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+	<link href="assets/css/enterprise.css" rel="stylesheet">
+
+	<style>
+	body{
+	background:#f5f7fb;
+	font-family:'Segoe UI',sans-serif;
+	}
+	.card {
+	background: #fff;
+	border-radius: 1rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e2e8f0;
+	}
+	/* hide scrollbar visuals while keeping scroll functionality */
+	.no-scrollbar{
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+	}
+	.no-scrollbar::-webkit-scrollbar{
+		display: none; /* Chrome, Safari, Opera */
+	}
+	</style>
+	</head>
+
+	<body class="enterprise">
+
+	<div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+	<div class="flex min-h-screen">
+
+	<!-- SIDEBAR -->
+	<aside id="sidebar" class="app-sidebar" aria-label="Main navigation">
+	  <a class="brand" href="dashboard.html">
+	    <span class="brand-mark"><i class="fa-solid fa-hospital" aria-hidden="true"></i></span>
+	    <span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span>
+	  </a>
+	  <div class="nav-caption">Workspace</div>
+	  <nav class="app-nav">
+	    <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+	    <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+	    <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+	    <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+	    <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+	    <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+	    <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+	    <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+	    <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+	    <a class="active" aria-current="page" href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+	    <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+	    <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+	    <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+	  </nav>
+	  <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+	</aside>
+
+
+	<!-- MAIN -->
+	<div class="flex-1 relative overflow-auto">
+
+	<!-- TOPBAR -->
+	<div class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
+
+	<div class="flex items-center gap-4 flex-1">
+	<button id="sidebarToggle" class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">
+	<i class="fa-solid fa-bars text-xl"></i>
+	</button>
+	<div class="space-y-1">
+	<h1 class="text-4xl font-bold text-slate-800">Laboratory</h1>
+	</div>
+	</div>
+
+  <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            </button>
+            <div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Notifications</h3>
+                <span class="text-xs text-blue-600">3 new</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+                <div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+                <div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-message text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+            </button>
+            <div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Messages</h3>
+                <span class="text-xs text-blue-600">2 unread</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+                <div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+              </div>
+            </div>
+          </div>
+
+	<div class="flex items-center gap-3">
+	<img src="assets/image/profile.png" class="w-12 h-12 rounded-full">
+	<div>
+	<h4 id="profileName" class="font-semibold" data-profile-name></h4>
+	<p id="profileRole" class="text-sm text-slate-500" data-profile-role></p>
+	</div>
+	</div>
+	</div>
+	</div>
+            <main class="p-6 md:p-8 mt-24 ml-64">
+            <div class="max-w-7xl mx-auto space-y-6">
+            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Total Tests</h2>
+                <p id="totalTests" class="mt-4 text-3xl font-bold text-slate-900">—</p>
+                </div>
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Pending Samples</h2>
+                <p id="pendingSamples" class="mt-4 text-3xl font-bold text-amber-600">—</p>
+                </div>
+                <div class="card p-6">
+                <h2 class="text-sm font-medium text-slate-500">Reports Ready</h2>
+                <p id="reportsReady" class="mt-4 text-3xl font-bold text-blue-600">—</p>
+                </div>
+            </section>
+
+            <section class="grid gap-6 xl:grid-cols-2">
+                <section class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Quick Actions</h2>
+                    <p class="text-sm text-slate-500">Create new lab entries and manage reports.</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <button id="newTestBtn" class="w-full rounded-xl bg-blue-600 px-4 py-3 text-white hover:bg-blue-700">+ New Test Request</button>
+                    <button id="newSampleBtn" class="w-full rounded-xl bg-slate-100 px-4 py-3 text-slate-700 hover:bg-slate-200">+ New Sample Collection</button>
+                    <button id="generateReportBtn" class="w-full rounded-xl bg-slate-100 px-4 py-3 text-slate-700 hover:bg-slate-200">+ Generate Report</button>
+                </div>
+                </section>
+
+                <section class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Recent Test Requests</h2>
+                    <p class="text-sm text-slate-500">Latest lab work in progress.</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left">
+                    <thead class="border-b text-slate-500 text-sm">
+                        <tr>
+                        <th class="py-3 px-2">Request ID</th>
+                        <th class="py-3 px-2">Patient</th>
+                        <th class="py-3 px-2">Test</th>
+                        <th class="py-3 px-2">Priority</th>
+                        <th class="py-3 px-2">Status</th>
+                        <th class="py-3 px-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="labTableBody" class="text-slate-700">
+                    </tbody>
+                    </table>
+                </div>
+                </section>
+            </section>
+            </div>
+        </main>
+        </div>
+    </div>
+
+  <div id="testModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">New Test Request</h2>
+          <p class="text-sm text-slate-500">Create a new laboratory test request.</p>
+        </div>
+        <button id="closeTestModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="testForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient Name</label>
+            <input type="text" id="patientName" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient ID</label>
+            <input type="text" id="patientId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Test Type</label>
+            <select id="testType" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Test</option>
+              <option value="CBC">CBC (Complete Blood Count)</option>
+              <option value="Blood Sugar">Blood Sugar</option>
+              <option value="COVID-19">COVID-19</option>
+              <option value="Thyroid">Thyroid Profile</option>
+              <option value="Lipid">Lipid Profile</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Priority</label>
+            <select id="priority" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="Normal">Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Notes</label>
+          <textarea id="notes" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" rows="3"></textarea>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Create Test Request</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="sampleModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">New Sample Collection</h2>
+          <p class="text-sm text-slate-500">Record a new sample collection.</p>
+        </div>
+        <button id="closeSampleModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="sampleForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Request ID</label>
+            <select id="requestId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select an uncollected test request</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Patient Name</label>
+            <input type="text" id="samplePatientName" class="w-full rounded-3xl border border-slate-200 bg-slate-100 px-4 py-3 outline-none" readonly>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Sample Type</label>
+            <select id="sampleType" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Type</option>
+              <option value="Blood">Blood</option>
+              <option value="Urine">Urine</option>
+              <option value="Swab">Swab</option>
+              <option value="Stool">Stool</option>
+              <option value="Saliva">Saliva</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Collection Time</label>
+            <input type="datetime-local" id="collectionTime" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Collector Name</label>
+          <input type="text" id="collectorName" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Record Collection</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="reportModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Generate Report</h2>
+          <p class="text-sm text-slate-500">Generate laboratory test report.</p>
+        </div>
+        <button id="closeReportModal" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="reportForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Request ID</label>
+            <select id="reportRequestId" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select a collected test request</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Test Type</label>
+            <input type="text" id="reportTestType" class="w-full rounded-3xl border border-slate-200 bg-slate-100 px-4 py-3 outline-none" readonly>
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Result Status</label>
+            <select id="resultStatus" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+              <option value="">Select Status</option>
+              <option value="Normal">Normal</option>
+              <option value="Abnormal">Abnormal</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Verified By</label>
+            <input type="text" id="verifiedBy" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-2">Findings</label>
+          <textarea id="findings" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Generate Report</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="labDetailsModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Test Request Details</h2>
+          <p class="text-sm text-slate-500">Saved request, sample, and result information.</p>
+        </div>
+        <button id="closeLabDetails" type="button" class="text-slate-500 hover:text-slate-900" aria-label="Close test details">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <dl class="grid gap-4 text-sm sm:grid-cols-2">
+        <div><dt class="font-semibold text-slate-500">Request ID</dt><dd id="detailRequestId" class="break-all text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Patient</dt><dd id="detailPatient" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Patient ID</dt><dd id="detailPatientId" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Test</dt><dd id="detailTest" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Priority</dt><dd id="detailPriority" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Status</dt><dd id="detailStatus" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Sample</dt><dd id="detailSample" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Collected</dt><dd id="detailCollection" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Collector</dt><dd id="detailCollector" class="text-slate-900"></dd></div>
+        <div><dt class="font-semibold text-slate-500">Result status</dt><dd id="detailResultStatus" class="text-slate-900"></dd></div>
+        <div class="sm:col-span-2"><dt class="font-semibold text-slate-500">Notes</dt><dd id="detailNotes" class="whitespace-pre-wrap text-slate-900"></dd></div>
+        <div class="sm:col-span-2"><dt class="font-semibold text-slate-500">Findings</dt><dd id="detailFindings" class="whitespace-pre-wrap text-slate-900"></dd></div>
+        <div class="sm:col-span-2"><dt class="font-semibold text-slate-500">Verified by</dt><dd id="detailVerifiedBy" class="text-slate-900"></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <script>
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const labTableBody = document.getElementById('labTableBody');
+    let labTests = [];
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    sidebarToggle?.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      sidebarBackdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    sidebarBackdrop?.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      closeSidebar();
+      [testModal, sampleModal, reportModal, labDetailsModal].forEach((modal) => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+    });
+
+    function setRequestOptions(select, placeholder, requests) {
+      select.replaceChildren();
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = placeholder;
+      select.appendChild(emptyOption);
+      requests.forEach((test) => {
+        const option = document.createElement('option');
+        option.value = test._id;
+        option.textContent = `${test._id} · ${test.patientName} · ${test.testName}`;
+        select.appendChild(option);
+      });
+    }
+
+    function getTestPriority(test) {
+      const legacyPriority = ['Normal', 'Urgent', 'Critical'].includes(test.status) ? test.status : '';
+      return test.priority || (!test.reportReady && legacyPriority) || 'Normal';
+    }
+
+    function getTestStatus(test) {
+      if (test.reportReady) return 'Completed';
+      if (['Normal', 'Urgent', 'Critical'].includes(test.status)) {
+        return test.sampleCollected ? 'In Progress' : 'Requested';
+      }
+      return test.status || 'Requested';
+    }
+
+    function renderLabTests(tests) {
+      labTests = tests;
+      document.getElementById('totalTests').textContent = String(tests.length);
+      document.getElementById('pendingSamples').textContent = String(tests.filter((test) =>
+        !test.sampleCollected && !/^(cancelled|completed)$/i.test(test.status || '')
+      ).length);
+      document.getElementById('reportsReady').textContent = String(tests.filter((test) => test.reportReady).length);
+      setRequestOptions(
+        document.getElementById('requestId'),
+        'Select an uncollected test request',
+        tests.filter((test) => !test.sampleCollected && !test.reportReady)
+      );
+      setRequestOptions(
+        document.getElementById('reportRequestId'),
+        'Select a collected test request',
+        tests.filter((test) => test.sampleCollected && !test.reportReady)
+      );
+      if (!tests.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.className = 'py-3 px-2 text-slate-500';
+        cell.textContent = 'No test requests yet.';
+        row.appendChild(cell);
+        labTableBody.replaceChildren(row);
+        return;
+      }
+
+      labTableBody.replaceChildren();
+      tests.forEach((test) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b';
+        [test._id || 'N/A', test.patientName, test.testName, getTestPriority(test)].forEach((value) => {
+          const cell = document.createElement('td');
+          cell.className = 'max-w-48 break-all py-3 px-2';
+          cell.textContent = value || '—';
+          row.appendChild(cell);
+        });
+        const statusCell = document.createElement('td');
+        statusCell.className = 'py-3 px-2';
+        const status = document.createElement('span');
+        status.className = `inline-flex rounded-full px-3 py-1 text-xs font-semibold ${test.reportReady ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`;
+        status.textContent = getTestStatus(test);
+        statusCell.appendChild(status);
+        row.appendChild(statusCell);
+
+        const actionCell = document.createElement('td');
+        actionCell.className = 'py-3 px-2';
+        const detailsButton = document.createElement('button');
+        detailsButton.type = 'button';
+        detailsButton.className = 'font-semibold text-blue-700 hover:text-blue-900';
+        detailsButton.dataset.action = 'details';
+        detailsButton.dataset.id = test._id;
+        detailsButton.textContent = 'Details';
+        actionCell.appendChild(detailsButton);
+        row.appendChild(actionCell);
+        labTableBody.appendChild(row);
+      });
+    }
+
+    async function loadLabTests() {
+      try {
+        const response = await fetch('/api/lab-tests');
+        if (!response.ok) throw new Error('Unable to load lab tests');
+        const tests = await response.json();
+        renderLabTests(Array.isArray(tests) ? tests : []);
+      } catch (error) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.className = 'py-3 px-2 text-red-500';
+        cell.textContent = error.message;
+        row.appendChild(cell);
+        labTableBody.replaceChildren(row);
+      }
+    }
+
+    async function apiError(response, fallback) {
+      try {
+        const body = await response.json();
+        return body.message || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    const newTestBtn = document.getElementById('newTestBtn');
+    const testModal = document.getElementById('testModal');
+    const closeTestModal = document.getElementById('closeTestModal');
+    const testForm = document.getElementById('testForm');
+
+    newTestBtn.addEventListener('click', () => {
+      testModal.classList.remove('hidden');
+      testModal.classList.add('flex');
+    });
+
+    closeTestModal.addEventListener('click', () => {
+      testModal.classList.add('hidden');
+      testModal.classList.remove('flex');
+      testForm.reset();
+    });
+
+    testModal.addEventListener('click', (event) => {
+      if (event.target === testModal) {
+        testModal.classList.add('hidden');
+        testModal.classList.remove('flex');
+        testForm.reset();
+      }
+    });
+
+    testForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const patientName = document.getElementById('patientName').value.trim();
+      const patientId = document.getElementById('patientId').value.trim();
+      const testType = document.getElementById('testType').value.trim();
+      const priority = document.getElementById('priority').value.trim();
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!patientName || !patientId || !testType || !priority) return;
+
+      try {
+        const response = await fetch('/api/lab-tests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            patientName,
+            patientId,
+            testName: testType,
+            priority,
+            notes,
+            sampleCollected: false,
+            reportReady: false,
+            status: 'Requested'
+          })
+        });
+        if (!response.ok) throw new Error(await apiError(response, 'Unable to create lab request'));
+        alert('Test request created successfully.');
+        testForm.reset();
+        testModal.classList.add('hidden');
+        testModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    const newSampleBtn = document.getElementById('newSampleBtn');
+    const sampleModal = document.getElementById('sampleModal');
+    const closeSampleModal = document.getElementById('closeSampleModal');
+    const sampleForm = document.getElementById('sampleForm');
+    const requestIdSelect = document.getElementById('requestId');
+    const samplePatientName = document.getElementById('samplePatientName');
+
+    requestIdSelect.addEventListener('change', () => {
+      const request = labTests.find((test) => test._id === requestIdSelect.value);
+      samplePatientName.value = request ? request.patientName : '';
+    });
+
+    newSampleBtn.addEventListener('click', () => {
+      sampleModal.classList.remove('hidden');
+      sampleModal.classList.add('flex');
+    });
+
+    closeSampleModal.addEventListener('click', () => {
+      sampleModal.classList.add('hidden');
+      sampleModal.classList.remove('flex');
+      sampleForm.reset();
+    });
+
+    sampleModal.addEventListener('click', (event) => {
+      if (event.target === sampleModal) {
+        sampleModal.classList.add('hidden');
+        sampleModal.classList.remove('flex');
+        sampleForm.reset();
+      }
+    });
+
+    sampleForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const requestId = document.getElementById('requestId').value.trim();
+      const sampleType = document.getElementById('sampleType').value.trim();
+      const collectionTime = document.getElementById('collectionTime').value;
+      const collectorName = document.getElementById('collectorName').value.trim();
+      const request = labTests.find((test) => test._id === requestId);
+
+      if (!request || !sampleType || !collectionTime || !collectorName) return;
+
+      try {
+        const response = await fetch(`/api/lab-tests/${encodeURIComponent(requestId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sampleCollected: true,
+            sampleType,
+            collectionTime,
+            collectorName,
+            status: 'In Progress'
+          })
+        });
+        if (!response.ok) throw new Error(await apiError(response, 'Unable to record sample'));
+        alert('Sample collection saved successfully.');
+        sampleForm.reset();
+        sampleModal.classList.add('hidden');
+        sampleModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    const generateReportBtn = document.getElementById('generateReportBtn');
+    const reportModal = document.getElementById('reportModal');
+    const closeReportModal = document.getElementById('closeReportModal');
+    const reportForm = document.getElementById('reportForm');
+    const reportRequestId = document.getElementById('reportRequestId');
+    const reportTestType = document.getElementById('reportTestType');
+
+    reportRequestId.addEventListener('change', () => {
+      const request = labTests.find((test) => test._id === reportRequestId.value);
+      reportTestType.value = request ? request.testName : '';
+    });
+
+    generateReportBtn.addEventListener('click', () => {
+      reportModal.classList.remove('hidden');
+      reportModal.classList.add('flex');
+    });
+
+    closeReportModal.addEventListener('click', () => {
+      reportModal.classList.add('hidden');
+      reportModal.classList.remove('flex');
+      reportForm.reset();
+    });
+
+    reportModal.addEventListener('click', (event) => {
+      if (event.target === reportModal) {
+        reportModal.classList.add('hidden');
+        reportModal.classList.remove('flex');
+        reportForm.reset();
+      }
+    });
+
+    reportForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const requestId = reportRequestId.value.trim();
+      const resultStatus = document.getElementById('resultStatus').value.trim();
+      const verifiedBy = document.getElementById('verifiedBy').value.trim();
+      const findings = document.getElementById('findings').value.trim();
+      const request = labTests.find((test) => test._id === requestId);
+
+      if (!request || !resultStatus || !verifiedBy || !findings) return;
+
+      try {
+        const response = await fetch(`/api/lab-tests/${encodeURIComponent(requestId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportReady: true,
+            resultStatus,
+            verifiedBy,
+            findings,
+            status: 'Completed'
+          })
+        });
+        if (!response.ok) throw new Error(await apiError(response, 'Unable to generate report'));
+        alert('Laboratory report saved successfully.');
+        reportForm.reset();
+        reportModal.classList.add('hidden');
+        reportModal.classList.remove('flex');
+        await loadLabTests();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    const labDetailsModal = document.getElementById('labDetailsModal');
+    document.getElementById('closeLabDetails').addEventListener('click', () => {
+      labDetailsModal.classList.add('hidden');
+      labDetailsModal.classList.remove('flex');
+    });
+    labDetailsModal.addEventListener('click', (event) => {
+      if (event.target === labDetailsModal) {
+        labDetailsModal.classList.add('hidden');
+        labDetailsModal.classList.remove('flex');
+      }
+    });
+    labTableBody.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-action="details"]');
+      if (!button) return;
+      const test = labTests.find((item) => item._id === button.dataset.id);
+      if (!test) return;
+      const details = {
+        detailRequestId: test._id,
+        detailPatient: test.patientName,
+        detailPatientId: test.patientId,
+        detailTest: test.testName,
+        detailPriority: getTestPriority(test),
+        detailStatus: getTestStatus(test),
+        detailSample: test.sampleType,
+        detailCollection: test.collectionTime,
+        detailCollector: test.collectorName,
+        detailResultStatus: test.resultStatus,
+        detailNotes: test.notes,
+        detailFindings: test.findings,
+        detailVerifiedBy: test.verifiedBy
+      };
+      Object.entries(details).forEach(([id, value]) => {
+        document.getElementById(id).textContent = value || '—';
+      });
+      labDetailsModal.classList.remove('hidden');
+      labDetailsModal.classList.add('flex');
+    });
+
+    loadLabTests();
+  </script>
+<script src="assets/js/auth.js"></script>
+</body>
+</html>

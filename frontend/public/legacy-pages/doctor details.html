@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Doctors | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a class="active" aria-current="page" href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+          <div><p class="topbar-title">Doctors</p><p class="topbar-subtitle">Medical team directory</p></div>
+        </div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading">
+          <div><div class="eyebrow">Clinical team</div><h1>Doctor directory</h1><p>Manage doctor profiles and availability using your staff records.</p></div>
+          <button class="primary-button" id="addDoctorButton" type="button"><i class="fa-solid fa-plus"></i>Add doctor</button>
+        </section>
+        <p class="notice error" id="pageError" role="alert" hidden></p>
+
+        <section class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:17px">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Doctors</span><span class="metric-icon"><i class="fa-solid fa-user-doctor"></i></span></div><div class="metric-value" id="doctorCount">—</div><div class="metric-note">Doctor and consultant staff roles</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Marked available</span><span class="metric-icon green"><i class="fa-solid fa-circle-check"></i></span></div><div class="metric-value" id="availableCount">—</div><div class="metric-note">Based on saved availability status</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Appointments</span><span class="metric-icon teal"><i class="fa-solid fa-calendar-check"></i></span></div><div class="metric-value" id="doctorAppointmentCount">—</div><div class="metric-note">Appointments assigned to listed doctors</div></article>
+        </section>
+
+        <section class="table-panel" style="padding:18px">
+          <div class="toolbar">
+            <label class="sr-only" for="doctorSearch">Search doctors</label>
+            <input class="search-field" id="doctorSearch" type="search" placeholder="Search name, specialty or department">
+            <label class="sr-only" for="availabilityFilter">Filter by availability</label>
+            <select class="filter-field" id="availabilityFilter"><option value="">All availability</option><option>Available</option><option>In Consultation</option><option>On Leave</option><option>Not set</option></select>
+            <span style="margin-left:auto;color:var(--muted);font-size:11px" id="resultCount" aria-live="polite"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Doctor</th><th>Specialty / department</th><th>Contact</th><th>Experience</th><th>Availability / shift</th><th>Appointments</th><th>Actions</th></tr></thead>
+              <tbody id="doctorRows"><tr><td class="empty-row" colspan="7">Loading doctor records…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="doctorModal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-heading"><div><h2 id="modalTitle">Add doctor</h2><p>Doctor information is saved in staff management records.</p></div><button class="close-button" id="closeModal" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+      <p class="notice error" id="formError" role="alert" hidden></p>
+      <form id="doctorForm">
+        <div class="form-grid">
+          <div class="form-field"><label for="doctorName">Full name</label><input class="form-control" id="doctorName" name="name" required maxlength="120"></div>
+          <div class="form-field"><label for="specialization">Specialty</label><input class="form-control" id="specialization" name="specialization" required maxlength="100"></div>
+          <div class="form-field"><label for="department">Department</label><input class="form-control" id="department" name="department" required maxlength="100"></div>
+          <div class="form-field"><label for="experienceYears">Experience (years)</label><input class="form-control" id="experienceYears" name="experienceYears" type="number" min="0" max="70"></div>
+          <div class="form-field"><label for="phone">Phone</label><input class="form-control" id="phone" name="phone" type="tel" maxlength="30"></div>
+          <div class="form-field"><label for="email">Email</label><input class="form-control" id="email" name="email" type="email" maxlength="150"></div>
+          <div class="form-field"><label for="availability">Availability</label><select class="form-control" id="availability" name="availability"><option>Not set</option><option>Available</option><option>In Consultation</option><option>On Leave</option></select></div>
+          <div class="form-field"><label for="shift">Shift</label><select class="form-control" id="shift" name="shift"><option value="">Not set</option><option>Morning</option><option>Afternoon</option><option>Night</option><option>Rotating</option></select></div>
+        </div>
+        <div class="form-actions"><button class="secondary-button" id="cancelModal" type="button">Cancel</button><button class="primary-button" id="saveDoctor" type="submit">Save doctor</button></div>
+      </form>
+    </section>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const doctorRows = document.getElementById('doctorRows');
+    const doctorSearch = document.getElementById('doctorSearch');
+    const availabilityFilter = document.getElementById('availabilityFilter');
+    const doctorForm = document.getElementById('doctorForm');
+    const doctorModal = document.getElementById('doctorModal');
+    const pageError = document.getElementById('pageError');
+    const formError = document.getElementById('formError');
+    let doctors = [];
+    let appointments = [];
+    let editingId = null;
+
+    async function requestJson(url, options) {
+      const response = await fetch(url, options);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || 'The request could not be completed.');
+      return result;
+    }
+
+    function showNotice(target, message) {
+      target.textContent = message;
+      target.hidden = !message;
+    }
+
+    function renderDoctors() {
+      const query = doctorSearch.value.trim().toLowerCase();
+      const selectedAvailability = availabilityFilter.value.toLowerCase();
+      const filtered = doctors.filter((doctor) => {
+        const matchesText = [doctor.name, doctor.specialization, doctor.department, doctor.phone, doctor.email]
+          .some((value) => String(value || '').toLowerCase().includes(query));
+        const availability = String(doctor.availability || 'Not set').toLowerCase();
+        return matchesText && (!selectedAvailability || availability === selectedAvailability);
+      });
+      document.getElementById('resultCount').textContent = `${filtered.length} doctor${filtered.length === 1 ? '' : 's'}`;
+      document.getElementById('doctorCount').textContent = String(doctors.length);
+      document.getElementById('availableCount').textContent = String(doctors.filter((doctor) => doctor.availability === 'Available').length);
+      document.getElementById('doctorAppointmentCount').textContent = String(appointments.filter((appointment) => doctors.some((doctor) => doctor.name === appointment.doctorName)).length);
+      if (!filtered.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.className = 'empty-row';
+        cell.textContent = doctors.length ? 'No doctors match your search.' : 'No doctor roles are registered yet.';
+        row.appendChild(cell);
+        doctorRows.replaceChildren(row);
+        return;
+      }
+
+      doctorRows.replaceChildren();
+      filtered.forEach((doctor) => {
+        const row = document.createElement('tr');
+        const values = [
+          doctor.name,
+          [doctor.specialization, doctor.department].filter(Boolean).join(' · ') || '—',
+          [doctor.phone, doctor.email].filter(Boolean).join(' · ') || '—',
+          doctor.experienceYears === undefined || doctor.experienceYears === null ? '—' : `${doctor.experienceYears} years`,
+          [doctor.availability || 'Not set', doctor.shift].filter(Boolean).join(' · '),
+          String(appointments.filter((appointment) => appointment.doctorName === doctor.name).length)
+        ];
+        values.forEach((value, index) => {
+          const cell = document.createElement('td');
+          if (index === 4) {
+            const pill = document.createElement('span');
+            pill.className = `status-pill${doctor.availability === 'Available' ? ' success' : doctor.availability === 'On Leave' ? ' warning' : ''}`;
+            pill.textContent = value;
+            cell.appendChild(pill);
+          } else {
+            cell.textContent = value;
+          }
+          row.appendChild(cell);
+        });
+        const actionCell = document.createElement('td');
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'row-actions';
+        const edit = document.createElement('button');
+        edit.className = 'small-button';
+        edit.type = 'button';
+        edit.textContent = 'Edit';
+        edit.addEventListener('click', () => openModal(doctor));
+        const remove = document.createElement('button');
+        remove.className = 'small-button';
+        remove.type = 'button';
+        remove.textContent = 'Delete';
+        remove.addEventListener('click', () => deleteDoctor(doctor));
+        actionGroup.append(edit, remove);
+        actionCell.appendChild(actionGroup);
+        row.appendChild(actionCell);
+        doctorRows.appendChild(row);
+      });
+    }
+
+    async function loadDoctors() {
+      try {
+        const [staff, appointmentsData] = await Promise.all([
+          requestJson('/api/staff'),
+          requestJson('/api/appointments')
+        ]);
+        doctors = staff.filter((member) => /doctor|consultant|physician/i.test(member.role || ''));
+        appointments = appointmentsData;
+        showNotice(pageError, '');
+        renderDoctors();
+      } catch (error) {
+        showNotice(pageError, error.message);
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.className = 'empty-row';
+        cell.textContent = 'Unable to load doctor records.';
+        row.appendChild(cell);
+        doctorRows.replaceChildren(row);
+      }
+    }
+
+    function openModal(doctor) {
+      editingId = doctor ? doctor._id : null;
+      doctorForm.reset();
+      showNotice(formError, '');
+      document.getElementById('modalTitle').textContent = doctor ? 'Edit doctor' : 'Add doctor';
+      document.getElementById('saveDoctor').textContent = doctor ? 'Save changes' : 'Save doctor';
+      document.getElementById('availability').value = 'Not set';
+      if (doctor) {
+        document.getElementById('doctorName').value = doctor.name || '';
+        document.getElementById('specialization').value = doctor.specialization || doctor.department || '';
+        document.getElementById('department').value = doctor.department || '';
+        document.getElementById('experienceYears').value = doctor.experienceYears === undefined || doctor.experienceYears === null ? '' : doctor.experienceYears;
+        document.getElementById('phone').value = doctor.phone || '';
+        document.getElementById('email').value = doctor.email || '';
+        document.getElementById('availability').value = doctor.availability || 'Not set';
+        document.getElementById('shift').value = doctor.shift || '';
+      }
+      doctorModal.hidden = false;
+      document.getElementById('doctorName').focus();
+    }
+
+    function closeModal() {
+      doctorModal.hidden = true;
+      editingId = null;
+    }
+
+    async function deleteDoctor(doctor) {
+      if (!window.confirm(`Delete ${doctor.name} from the staff directory?`)) return;
+      try {
+        await requestJson(`/api/staff/${doctor._id}`, { method: 'DELETE' });
+        await loadDoctors();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    document.getElementById('addDoctorButton').addEventListener('click', () => openModal(null));
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('cancelModal').addEventListener('click', closeModal);
+    doctorModal.addEventListener('click', (event) => {
+      if (event.target === doctorModal) closeModal();
+    });
+    doctorSearch.addEventListener('input', renderDoctors);
+    availabilityFilter.addEventListener('change', renderDoctors);
+    doctorForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(doctorForm));
+      payload.role = 'Doctor';
+      payload.experienceYears = payload.experienceYears ? Number(payload.experienceYears) : null;
+      const saveButton = document.getElementById('saveDoctor');
+      saveButton.disabled = true;
+      try {
+        await requestJson(editingId ? `/api/staff/${editingId}` : '/api/staff', {
+          method: editingId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        closeModal();
+        await loadDoctors();
+      } catch (error) {
+        showNotice(formError, error.message);
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    loadDoctors();
+  </script>
+</body>
+</html>

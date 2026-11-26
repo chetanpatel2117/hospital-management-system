@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Staff | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a class="active" aria-current="page" href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button><div><p class="topbar-title">Staff management</p><p class="topbar-subtitle">People, departments and shifts</p></div></div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading"><div><div class="eyebrow">People operations</div><h1>Staff directory</h1><p>Keep contact information, team assignments and shifts up to date.</p></div><button class="primary-button" id="addStaffButton" type="button"><i class="fa-solid fa-plus"></i>Add staff member</button></section>
+        <p class="notice error" id="pageError" role="alert" hidden></p>
+
+        <section class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:17px">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Staff members</span><span class="metric-icon"><i class="fa-solid fa-people-group"></i></span></div><div class="metric-value" id="staffCount">—</div><div class="metric-note">Staff records on file</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Departments</span><span class="metric-icon teal"><i class="fa-solid fa-building"></i></span></div><div class="metric-value" id="departmentCount">—</div><div class="metric-note">Distinct assigned departments</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Shift assignments</span><span class="metric-icon amber"><i class="fa-regular fa-clock"></i></span></div><div class="metric-value" id="shiftCount">—</div><div class="metric-note">Members with a shift recorded</div></article>
+        </section>
+
+        <section class="table-panel" style="padding:18px">
+          <div class="toolbar">
+            <label class="sr-only" for="staffSearch">Search staff</label><input class="search-field" id="staffSearch" type="search" placeholder="Search name, role or contact">
+            <label class="sr-only" for="departmentFilter">Filter by department</label><select class="filter-field" id="departmentFilter"><option value="">All departments</option></select>
+            <span style="margin-left:auto;color:var(--muted);font-size:11px" id="resultCount" aria-live="polite"></span>
+          </div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Staff member</th><th>Role</th><th>Department</th><th>Contact</th><th>Shift</th><th>Actions</th></tr></thead><tbody id="staffRows"><tr><td class="empty-row" colspan="6">Loading staff records…</td></tr></tbody></table></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="staffModal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-heading"><div><h2 id="modalTitle">Add staff member</h2><p>Contact details are visible to signed-in hospital staff.</p></div><button class="close-button" id="closeModal" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+      <p class="notice error" id="formError" role="alert" hidden></p>
+      <form id="staffForm"><div class="form-grid">
+        <div class="form-field"><label for="staffName">Full name</label><input class="form-control" id="staffName" name="name" required maxlength="120"></div>
+        <div class="form-field"><label for="staffRole">Role</label><input class="form-control" id="staffRole" name="role" required maxlength="100" placeholder="Nurse, Receptionist"></div>
+        <div class="form-field"><label for="staffDepartment">Department</label><input class="form-control" id="staffDepartment" name="department" maxlength="100"></div>
+        <div class="form-field"><label for="staffShift">Shift</label><select class="form-control" id="staffShift" name="shift"><option value="">Not assigned</option><option>Morning</option><option>Afternoon</option><option>Night</option><option>Rotating</option></select></div>
+        <div class="form-field"><label for="staffPhone">Phone</label><input class="form-control" id="staffPhone" name="phone" type="tel" maxlength="30"></div>
+        <div class="form-field"><label for="staffEmail">Email</label><input class="form-control" id="staffEmail" name="email" type="email" maxlength="150"></div>
+      </div><div class="form-actions"><button class="secondary-button" id="cancelModal" type="button">Cancel</button><button class="primary-button" id="saveStaff" type="submit">Save staff member</button></div></form>
+    </section>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const staffRows = document.getElementById('staffRows');
+    const staffForm = document.getElementById('staffForm');
+    const staffModal = document.getElementById('staffModal');
+    const pageError = document.getElementById('pageError');
+    const formError = document.getElementById('formError');
+    let staff = [];
+    let editingId = null;
+
+    async function requestJson(url, options) {
+      const response = await fetch(url, options);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || 'The request could not be completed.');
+      return result;
+    }
+
+    function showNotice(target, message) {
+      target.textContent = message;
+      target.hidden = !message;
+    }
+
+    function renderStaff() {
+      const query = document.getElementById('staffSearch').value.trim().toLowerCase();
+      const selectedDepartment = document.getElementById('departmentFilter').value;
+      const filtered = staff.filter((member) => [member.name, member.role, member.department, member.phone, member.email]
+        .some((value) => String(value || '').toLowerCase().includes(query))
+        && (!selectedDepartment || member.department === selectedDepartment));
+      document.getElementById('staffCount').textContent = String(staff.length);
+      document.getElementById('departmentCount').textContent = String(new Set(staff.map((member) => member.department).filter(Boolean)).size);
+      document.getElementById('shiftCount').textContent = String(staff.filter((member) => Boolean(member.shift)).length);
+      document.getElementById('resultCount').textContent = `${filtered.length} staff member${filtered.length === 1 ? '' : 's'}`;
+      if (!filtered.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.className = 'empty-row';
+        cell.textContent = staff.length ? 'No staff match your search.' : 'No staff records have been added yet.';
+        row.appendChild(cell);
+        staffRows.replaceChildren(row);
+        return;
+      }
+
+      staffRows.replaceChildren();
+      filtered.forEach((member) => {
+        const row = document.createElement('tr');
+        [member.name, member.role, member.department || '—', [member.phone, member.email].filter(Boolean).join(' · ') || '—', member.shift || 'Not assigned'].forEach((value) => {
+          const cell = document.createElement('td');
+          cell.textContent = value;
+          row.appendChild(cell);
+        });
+        const actionCell = document.createElement('td');
+        const group = document.createElement('div');
+        group.className = 'row-actions';
+        const edit = document.createElement('button');
+        edit.className = 'small-button';
+        edit.type = 'button';
+        edit.textContent = 'Edit';
+        edit.addEventListener('click', () => openModal(member));
+        const remove = document.createElement('button');
+        remove.className = 'small-button';
+        remove.type = 'button';
+        remove.textContent = 'Delete';
+        remove.addEventListener('click', () => deleteStaff(member));
+        group.append(edit, remove);
+        actionCell.appendChild(group);
+        row.appendChild(actionCell);
+        staffRows.appendChild(row);
+      });
+    }
+
+    async function loadStaff() {
+      try {
+        staff = await requestJson('/api/staff');
+        const departments = [...new Set(staff.map((member) => member.department).filter(Boolean))].sort();
+        const filter = document.getElementById('departmentFilter');
+        const selection = filter.value;
+        filter.replaceChildren(new Option('All departments', ''));
+        departments.forEach((department) => filter.add(new Option(department, department)));
+        filter.value = departments.includes(selection) ? selection : '';
+        showNotice(pageError, '');
+        renderStaff();
+      } catch (error) {
+        showNotice(pageError, error.message);
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 6;
+        cell.className = 'empty-row';
+        cell.textContent = 'Unable to load staff records.';
+        row.appendChild(cell);
+        staffRows.replaceChildren(row);
+      }
+    }
+
+    function openModal(member) {
+      editingId = member ? member._id : null;
+      staffForm.reset();
+      showNotice(formError, '');
+      document.getElementById('modalTitle').textContent = member ? 'Edit staff member' : 'Add staff member';
+      document.getElementById('saveStaff').textContent = member ? 'Save changes' : 'Save staff member';
+      if (member) {
+        document.getElementById('staffName').value = member.name || '';
+        document.getElementById('staffRole').value = member.role || '';
+        document.getElementById('staffDepartment').value = member.department || '';
+        document.getElementById('staffShift').value = member.shift || '';
+        document.getElementById('staffPhone').value = member.phone || '';
+        document.getElementById('staffEmail').value = member.email || '';
+      }
+      staffModal.hidden = false;
+      document.getElementById('staffName').focus();
+    }
+
+    function closeModal() {
+      staffModal.hidden = true;
+      editingId = null;
+    }
+
+    async function deleteStaff(member) {
+      if (!window.confirm(`Delete ${member.name} from staff records?`)) return;
+      try {
+        await requestJson(`/api/staff/${member._id}`, { method: 'DELETE' });
+        await loadStaff();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    document.getElementById('addStaffButton').addEventListener('click', () => openModal(null));
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('cancelModal').addEventListener('click', closeModal);
+    staffModal.addEventListener('click', (event) => { if (event.target === staffModal) closeModal(); });
+    document.getElementById('staffSearch').addEventListener('input', renderStaff);
+    document.getElementById('departmentFilter').addEventListener('change', renderStaff);
+    staffForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(staffForm));
+      const button = document.getElementById('saveStaff');
+      button.disabled = true;
+      try {
+        await requestJson(editingId ? `/api/staff/${editingId}` : '/api/staff', {
+          method: editingId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        closeModal();
+        await loadStaff();
+      } catch (error) {
+        showNotice(formError, error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    loadStaff();
+  </script>
+</body>
+</html>

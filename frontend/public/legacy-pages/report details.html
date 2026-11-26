@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Reports | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a class="active" aria-current="page" href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button><div><p class="topbar-title">Reports &amp; analytics</p><p class="topbar-subtitle">Database-backed operational reports</p></div></div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading"><div><div class="eyebrow">Operational analytics</div><h1>Reports &amp; insights</h1><p>Explore patient registration, appointments and billing activity for a selected period.</p></div><button class="secondary-button" id="exportCsv" type="button" disabled><i class="fa-solid fa-download"></i>Export CSV</button></section>
+        <section class="panel" style="margin-bottom:16px">
+          <div class="toolbar" style="margin:0">
+            <div class="form-field"><label for="fromDate">From</label><input class="form-control" id="fromDate" type="date"></div>
+            <div class="form-field"><label for="toDate">To</label><input class="form-control" id="toDate" type="date"></div>
+            <button class="primary-button" id="applyRange" type="button" style="align-self:flex-end"><i class="fa-solid fa-filter"></i>Apply range</button>
+            <span class="muted-note" id="rangeLabel" style="margin-left:auto;align-self:flex-end"></span>
+          </div>
+        </section>
+        <p class="notice error" id="reportError" role="alert" hidden></p>
+
+        <section class="metric-grid" aria-label="Report totals">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">New patients</span><span class="metric-icon"><i class="fa-solid fa-user-plus"></i></span></div><div class="metric-value" id="totalPatients">—</div><div class="metric-note">Records registered in period</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Appointments</span><span class="metric-icon teal"><i class="fa-solid fa-calendar-check"></i></span></div><div class="metric-value" id="totalAppointments">—</div><div class="metric-note">Visits scheduled in period</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Bills issued</span><span class="metric-icon amber"><i class="fa-solid fa-file-invoice"></i></span></div><div class="metric-value" id="totalBills">—</div><div class="metric-note">Bills created in period</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Paid amount recorded</span><span class="metric-icon green"><i class="fa-solid fa-indian-rupee-sign"></i></span></div><div class="metric-value" id="paidAmount">—</div><div class="metric-note">Grouped by recorded payment date</div></article>
+        </section>
+
+        <section class="section-grid two">
+          <article class="panel"><div class="panel-heading"><div><h2>Patient growth</h2><p>Patient registrations by month</p></div></div><div class="chart-wrap"><canvas id="patientChart" aria-label="Patient growth chart"></canvas><div class="chart-empty" data-chart-empty hidden>No patient records in this range.</div></div></article>
+          <article class="panel"><div class="panel-heading"><div><h2>Appointment activity</h2><p>Scheduled appointments by month</p></div></div><div class="chart-wrap"><canvas id="appointmentChart" aria-label="Appointment activity chart"></canvas><div class="chart-empty" data-chart-empty hidden>No appointments in this range.</div></div></article>
+        </section>
+        <section class="section-grid two">
+          <article class="panel"><div class="panel-heading"><div><h2>Billing activity</h2><p>Paid amount recorded by payment month</p></div></div><div class="chart-wrap"><canvas id="billingChart" aria-label="Billing activity chart"></canvas><div class="chart-empty" data-chart-empty hidden>No payments with a recorded date in this range.</div></div><p class="muted-note">Legacy bills without a recorded payment date are excluded from revenue totals.</p></article>
+          <article class="panel"><div class="panel-heading"><div><h2>Patients by department</h2><p>Derived from the patient condition field</p></div></div><div class="chart-wrap"><canvas id="departmentChart" aria-label="Patients by department chart"></canvas><div class="chart-empty" data-chart-empty hidden>No department information in this range.</div></div></article>
+        </section>
+        <section class="section-grid two">
+          <article class="panel"><div class="panel-heading"><div><h2>Appointment statuses</h2><p>Current status of visits scheduled in range</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Status</th><th>Appointments</th></tr></thead><tbody id="statusRows"><tr><td class="empty-row" colspan="2">Loading report…</td></tr></tbody></table></div></article>
+          <article class="panel"><div class="panel-heading"><div><h2>Doctor appointment volume</h2><p>Visits grouped by assigned doctor</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Doctor</th><th>Appointments</th></tr></thead><tbody id="doctorRows"><tr><td class="empty-row" colspan="2">Loading report…</td></tr></tbody></table></div></article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const reportCharts = [];
+    const currencyFormat = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const numberFormat = new Intl.NumberFormat('en-IN');
+    let reportData = null;
+
+    function renderChart(id, labels, values, color, currency) {
+      const canvas = document.getElementById(id);
+      const empty = canvas.parentElement.querySelector('[data-chart-empty]');
+      if (!values.some((value) => Number(value) > 0)) {
+        canvas.hidden = true;
+        empty.hidden = false;
+        return;
+      }
+      canvas.hidden = false;
+      empty.hidden = true;
+      reportCharts.push(new Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets: [{ data: values, backgroundColor: color, borderRadius: 5 }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: currency ? { label: (context) => ` ${currencyFormat.format(context.raw)}` } : {} } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { beginAtZero: true, grid: { color: '#edf1f5' }, ticks: { precision: 0, color: '#64748b', callback: currency ? (value) => currencyFormat.format(value) : undefined } }
+          }
+        }
+      }));
+    }
+
+    function renderTable(target, rows, columns, emptyMessage) {
+      if (!rows.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = columns;
+        cell.className = 'empty-row';
+        cell.textContent = emptyMessage;
+        row.appendChild(cell);
+        target.replaceChildren(row);
+        return;
+      }
+      target.replaceChildren();
+      rows.forEach((values) => {
+        const row = document.createElement('tr');
+        values.forEach((value) => {
+          const cell = document.createElement('td');
+          cell.textContent = String(value);
+          row.appendChild(cell);
+        });
+        target.appendChild(row);
+      });
+    }
+
+    function renderReport(data) {
+      reportData = data;
+      document.getElementById('exportCsv').disabled = false;
+      document.getElementById('rangeLabel').textContent = `${data.range.from} to ${data.range.to}`;
+      document.getElementById('totalPatients').textContent = numberFormat.format(data.totals.patients);
+      document.getElementById('totalAppointments').textContent = numberFormat.format(data.totals.appointments);
+      document.getElementById('totalBills').textContent = numberFormat.format(data.totals.bills);
+      document.getElementById('paidAmount').textContent = currencyFormat.format(data.totals.paidAmount);
+      reportCharts.forEach((chart) => chart.destroy());
+      reportCharts.length = 0;
+      const months = data.months.map((month) => month.label);
+      renderChart('patientChart', months, data.months.map((month) => month.patients), '#568fbd', false);
+      renderChart('appointmentChart', months, data.months.map((month) => month.appointments), '#0f8b8d', false);
+      renderChart('billingChart', months, data.months.map((month) => month.paidAmount), '#75a68c', true);
+      renderChart('departmentChart', data.patientsByDepartment.map((item) => item.label), data.patientsByDepartment.map((item) => item.value), '#7896b1', false);
+      renderTable(document.getElementById('statusRows'), data.appointmentStatuses.map((item) => [item.label, numberFormat.format(item.value)]), 2, 'No appointments in this date range.');
+      renderTable(document.getElementById('doctorRows'), data.doctorPerformance.map((item) => [item.name, numberFormat.format(item.appointments)]), 2, 'No doctor appointments in this date range.');
+    }
+
+    async function loadReport() {
+      const errorNotice = document.getElementById('reportError');
+      document.getElementById('exportCsv').disabled = true;
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      if (!from || !to || from > to) {
+        errorNotice.textContent = 'Choose a valid date range with the start date on or before the end date.';
+        errorNotice.hidden = false;
+        return;
+      }
+      try {
+        const response = await fetch(`/api/reports/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || 'Unable to load reports.');
+        errorNotice.hidden = true;
+        renderReport(data);
+      } catch (error) {
+        errorNotice.textContent = error.message;
+        errorNotice.hidden = false;
+      }
+    }
+
+    function csvCell(value) {
+      return `"${String(value ?? '').replace(/"/g, '""')}"`;
+    }
+
+    document.getElementById('applyRange').addEventListener('click', loadReport);
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      if (!reportData) return;
+      const rows = [
+        ['Report', 'From', reportData.range.from, 'To', reportData.range.to],
+        [],
+        ['Month', 'Patient registrations', 'Appointments scheduled', 'Bills issued', 'Billed amount', 'Paid amount recorded'],
+        ...reportData.months.map((month) => [month.label, month.patients, month.appointments, month.bills, month.billedAmount, month.paidAmount]),
+        [],
+        ['Patients by department'],
+        ['Department', 'Patients'],
+        ...reportData.patientsByDepartment.map((item) => [item.label, item.value]),
+        [],
+        ['Appointment status'],
+        ['Status', 'Appointments'],
+        ...reportData.appointmentStatuses.map((item) => [item.label, item.value]),
+        [],
+        ['Doctor appointment volume'],
+        ['Doctor', 'Appointments'],
+        ...reportData.doctorPerformance.map((item) => [item.name, item.appointments])
+      ];
+      const csv = rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `hospital-report-${reportData.range.from}-to-${reportData.range.to}.csv`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    const today = new Date();
+    const defaultTo = today.toISOString().slice(0, 10);
+    const defaultFrom = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 5, 1)).toISOString().slice(0, 10);
+    document.getElementById('fromDate').value = defaultFrom;
+    document.getElementById('toDate').value = defaultTo;
+    loadReport();
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    window.addEventListener('beforeunload', () => reportCharts.forEach((chart) => chart.destroy()));
+  </script>
+</body>
+</html>

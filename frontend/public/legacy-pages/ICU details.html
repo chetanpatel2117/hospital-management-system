@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>ICU | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a class="active" aria-current="page" href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button><div><p class="topbar-title">Intensive care</p><p class="topbar-subtitle">ICU room capacity and status</p></div></div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+      <div class="page-content">
+        <section class="page-heading"><div><div class="eyebrow">Critical care</div><h1>ICU capacity</h1><p>Live summary derived from room records with an ICU type.</p></div><a class="primary-button" href="room details.html"><i class="fa-solid fa-sliders"></i>Manage rooms</a></section>
+        <p class="notice error" id="pageError" role="alert" hidden></p>
+        <p class="notice">The current database tracks occupancy at room level, not individual ICU beds or clinical observations.</p>
+        <section class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:17px">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">ICU rooms</span><span class="metric-icon"><i class="fa-solid fa-door-open"></i></span></div><div class="metric-value" id="totalRooms">—</div><div class="metric-note">Rooms with ICU type</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Available capacity</span><span class="metric-icon green"><i class="fa-solid fa-bed"></i></span></div><div class="metric-value" id="availableBeds">—</div><div class="metric-note">Beds in available ICU rooms</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Occupied capacity</span><span class="metric-icon amber"><i class="fa-solid fa-heart-pulse"></i></span></div><div class="metric-value" id="occupiedBeds">—</div><div class="metric-note">Beds in occupied ICU rooms</div></article>
+        </section>
+        <section class="table-panel" style="padding:18px">
+          <div class="panel-heading"><div><h2>ICU rooms</h2><p>Patient assignment and status from current room records</p></div><span class="status-pill" id="icuRoomCount">— rooms</span></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Room</th><th>Capacity</th><th>Assigned patient</th><th>Status</th></tr></thead><tbody id="icuRows"><tr><td class="empty-row" colspan="4">Loading ICU rooms…</td></tr></tbody></table></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    async function loadIcuRooms() {
+      const errorNotice = document.getElementById('pageError');
+      const tableBody = document.getElementById('icuRows');
+      try {
+        const response = await fetch('/api/rooms');
+        const data = await response.json().catch(() => []);
+        if (!response.ok) throw new Error('Unable to load ICU room records.');
+        const rooms = data.filter((room) => /icu/i.test(room.type || ''));
+        const capacity = (status) => rooms.filter((room) => room.status === status).reduce((total, room) => total + Number(room.capacity || 1), 0);
+        document.getElementById('totalRooms').textContent = String(rooms.length);
+        document.getElementById('availableBeds').textContent = String(capacity('Available'));
+        document.getElementById('occupiedBeds').textContent = String(capacity('Occupied'));
+        document.getElementById('icuRoomCount').textContent = `${rooms.length} room${rooms.length === 1 ? '' : 's'}`;
+        if (!rooms.length) {
+          const row = document.createElement('tr');
+          const cell = document.createElement('td');
+          cell.colSpan = 4;
+          cell.className = 'empty-row';
+          cell.textContent = 'No rooms with an ICU type are registered.';
+          row.appendChild(cell);
+          tableBody.replaceChildren(row);
+          return;
+        }
+        tableBody.replaceChildren();
+        rooms.forEach((room) => {
+          const row = document.createElement('tr');
+          [room.roomNumber, String(room.capacity || 1), room.assignedTo || '—'].forEach((value) => {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.appendChild(cell);
+          });
+          const statusCell = document.createElement('td');
+          const pill = document.createElement('span');
+          pill.className = `status-pill${room.status === 'Available' ? ' success' : room.status === 'Occupied' ? ' warning' : ''}`;
+          pill.textContent = room.status || 'Unspecified';
+          statusCell.appendChild(pill);
+          row.appendChild(statusCell);
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        errorNotice.textContent = error.message;
+        errorNotice.hidden = false;
+        tableBody.replaceChildren();
+      }
+    }
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    loadIcuRooms();
+  </script>
+</body>
+</html>

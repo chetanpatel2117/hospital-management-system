@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#102a43">
+  <title>Emergency cases | MediCare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+</head>
+<body class="enterprise">
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <aside class="app-sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html"><span class="brand-mark"><i class="fa-solid fa-hospital"></i></span><span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span></a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a class="active" aria-current="page" href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <main class="app-main">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px"><button class="menu-toggle" id="sidebarToggle" type="button" aria-label="Open navigation" aria-expanded="false"><i class="fa-solid fa-bars"></i></button><div><p class="topbar-title">Emergency cases</p><p class="topbar-subtitle">Record and track urgent incidents</p></div></div>
+        <div class="topbar-user"><span class="avatar"><img src="assets/image/profile.png" alt=""></span><span class="user-copy"><span class="user-name" id="profileName" data-profile-name>Administrator</span><br><span class="user-role" id="profileRole" data-profile-role>Hospital team</span></span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-heading"><div><div class="eyebrow">Urgent care</div><h1>Emergency overview</h1><p>Case records are persisted to the hospital database. This screen doesn't allocate a room automatically.</p></div><button class="primary-button" id="addCaseButton" type="button"><i class="fa-solid fa-plus"></i>Record case</button></section>
+        <p class="notice error" id="pageError" role="alert" hidden></p>
+
+        <section class="metric-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:17px">
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Active cases</span><span class="metric-icon amber"><i class="fa-solid fa-truck-medical"></i></span></div><div class="metric-value" id="activeCases">—</div><div class="metric-note">Cases not marked resolved</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Critical cases</span><span class="metric-icon" style="background:#fff0ef;color:var(--red)"><i class="fa-solid fa-heart-pulse"></i></span></div><div class="metric-value" id="criticalCases">—</div><div class="metric-note">Active cases marked critical</div></article>
+          <article class="metric-card"><div class="metric-top"><span class="metric-label">Resolved</span><span class="metric-icon green"><i class="fa-solid fa-circle-check"></i></span></div><div class="metric-value" id="resolvedCases">—</div><div class="metric-note">Cases marked resolved</div></article>
+        </section>
+
+        <section class="table-panel" style="padding:18px">
+          <div class="toolbar">
+            <label class="sr-only" for="caseSearch">Search cases</label><input class="search-field" id="caseSearch" type="search" placeholder="Search patient, case ID or emergency type">
+            <label class="sr-only" for="caseStatus">Filter by case status</label><select class="filter-field" id="caseStatus"><option value="">All cases</option><option>Active</option><option>Resolved</option></select>
+            <span style="margin-left:auto;color:var(--muted);font-size:11px" id="resultCount" aria-live="polite"></span>
+          </div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Case</th><th>Patient</th><th>Emergency type</th><th>Condition</th><th>Room recorded</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead><tbody id="caseRows"><tr><td class="empty-row" colspan="8">Loading emergency records…</td></tr></tbody></table></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="caseModal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-heading"><div><h2 id="modalTitle">Record emergency case</h2><p>Enter only information needed to identify and track the urgent case.</p></div><button class="close-button" id="closeModal" type="button" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+      <p class="notice error" id="formError" role="alert" hidden></p>
+      <form id="caseForm"><div class="form-grid">
+        <div class="form-field"><label for="patientName">Patient name</label><input class="form-control" id="patientName" name="patientName" required maxlength="120"></div>
+        <div class="form-field"><label for="contactNumber">Contact number</label><input class="form-control" id="contactNumber" name="contactNumber" type="tel" maxlength="30"></div>
+        <div class="form-field"><label for="emergencyType">Emergency type</label><input class="form-control" id="emergencyType" name="emergencyType" required maxlength="120"></div>
+        <div class="form-field"><label for="conditionLevel">Condition level</label><select class="form-control" id="conditionLevel" name="conditionLevel" required><option value="">Select condition</option><option>Critical</option><option>Serious</option><option>Stable</option></select></div>
+        <div class="form-field full"><label for="roomNumber">Room number (record only)</label><input class="form-control" id="roomNumber" name="roomNumber" list="roomOptions" maxlength="30"><datalist id="roomOptions"></datalist><span class="muted-note">Recording a room here does not reserve a bed or change room status.</span></div>
+      </div><div class="form-actions"><button class="secondary-button" id="cancelModal" type="button">Cancel</button><button class="primary-button" id="saveCase" type="submit">Save case</button></div></form>
+    </section>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const caseRows = document.getElementById('caseRows');
+    const caseForm = document.getElementById('caseForm');
+    const caseModal = document.getElementById('caseModal');
+    const pageError = document.getElementById('pageError');
+    const formError = document.getElementById('formError');
+    let cases = [];
+
+    async function requestJson(url, options) {
+      const response = await fetch(url, options);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || 'The request could not be completed.');
+      return result;
+    }
+
+    function showNotice(target, message) {
+      target.textContent = message;
+      target.hidden = !message;
+    }
+
+    function renderCases() {
+      const query = document.getElementById('caseSearch').value.trim().toLowerCase();
+      const status = document.getElementById('caseStatus').value.toLowerCase();
+      const filtered = cases.filter((item) => [item.caseId, item.patientName, item.emergencyType]
+        .some((value) => String(value || '').toLowerCase().includes(query))
+        && (!status || String(item.status || '').toLowerCase() === status));
+      const active = cases.filter((item) => item.status !== 'Resolved');
+      document.getElementById('activeCases').textContent = String(active.length);
+      document.getElementById('criticalCases').textContent = String(active.filter((item) => item.conditionLevel === 'Critical').length);
+      document.getElementById('resolvedCases').textContent = String(cases.length - active.length);
+      document.getElementById('resultCount').textContent = `${filtered.length} case${filtered.length === 1 ? '' : 's'}`;
+      if (!filtered.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.className = 'empty-row';
+        cell.textContent = cases.length ? 'No cases match your search.' : 'No emergency cases have been recorded.';
+        row.appendChild(cell);
+        caseRows.replaceChildren(row);
+        return;
+      }
+
+      caseRows.replaceChildren();
+      filtered.forEach((item) => {
+        const row = document.createElement('tr');
+        const values = [item.caseId, item.patientName, item.emergencyType, item.conditionLevel, item.roomNumber || '—', item.contactNumber || '—'];
+        values.forEach((value, index) => {
+          const cell = document.createElement('td');
+          if (index === 3) {
+            const pill = document.createElement('span');
+            pill.className = `status-pill${value === 'Critical' ? ' danger' : value === 'Stable' ? ' success' : ' warning'}`;
+            pill.textContent = value;
+            cell.appendChild(pill);
+          } else {
+            cell.textContent = value;
+          }
+          row.appendChild(cell);
+        });
+        const statusCell = document.createElement('td');
+        const status = document.createElement('span');
+        status.className = `status-pill${item.status === 'Resolved' ? ' success' : ' warning'}`;
+        status.textContent = item.status || 'Active';
+        statusCell.appendChild(status);
+        row.appendChild(statusCell);
+        const actions = document.createElement('td');
+        const group = document.createElement('div');
+        group.className = 'row-actions';
+        if (item.status !== 'Resolved') {
+          const resolve = document.createElement('button');
+          resolve.type = 'button';
+          resolve.className = 'small-button';
+          resolve.textContent = 'Resolve';
+          resolve.addEventListener('click', () => updateCase(item, 'Resolved'));
+          group.appendChild(resolve);
+        }
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'small-button';
+        remove.textContent = 'Delete';
+        remove.addEventListener('click', () => deleteCase(item));
+        group.appendChild(remove);
+        actions.appendChild(group);
+        row.appendChild(actions);
+        caseRows.appendChild(row);
+      });
+    }
+
+    async function loadCases() {
+      try {
+        const [savedCases, rooms] = await Promise.all([
+          requestJson('/api/emergency-cases'),
+          requestJson('/api/rooms')
+        ]);
+        cases = savedCases;
+        const options = document.getElementById('roomOptions');
+        options.replaceChildren();
+        rooms.filter((room) => room.status === 'Available').forEach((room) => {
+          const option = document.createElement('option');
+          option.value = room.roomNumber;
+          options.appendChild(option);
+        });
+        showNotice(pageError, '');
+        renderCases();
+      } catch (error) {
+        showNotice(pageError, error.message);
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.className = 'empty-row';
+        cell.textContent = 'Unable to load emergency case records.';
+        row.appendChild(cell);
+        caseRows.replaceChildren(row);
+      }
+    }
+
+    function openModal() {
+      caseForm.reset();
+      showNotice(formError, '');
+      caseModal.hidden = false;
+      document.getElementById('patientName').focus();
+    }
+
+    function closeModal() {
+      caseModal.hidden = true;
+    }
+
+    async function updateCase(item, status) {
+      try {
+        await requestJson(`/api/emergency-cases/${item._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...item, status })
+        });
+        await loadCases();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    async function deleteCase(item) {
+      if (!window.confirm(`Permanently delete case ${item.caseId}?`)) return;
+      try {
+        await requestJson(`/api/emergency-cases/${item._id}`, { method: 'DELETE' });
+        await loadCases();
+      } catch (error) {
+        showNotice(pageError, error.message);
+      }
+    }
+
+    document.getElementById('addCaseButton').addEventListener('click', openModal);
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('cancelModal').addEventListener('click', closeModal);
+    caseModal.addEventListener('click', (event) => { if (event.target === caseModal) closeModal(); });
+    document.getElementById('caseSearch').addEventListener('input', renderCases);
+    document.getElementById('caseStatus').addEventListener('change', renderCases);
+    caseForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const payload = Object.fromEntries(new FormData(caseForm));
+      payload.caseId = `CASE-${Date.now()}`;
+      payload.status = 'Active';
+      const button = document.getElementById('saveCase');
+      button.disabled = true;
+      try {
+        await requestJson('/api/emergency-cases', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        closeModal();
+        await loadCases();
+      } catch (error) {
+        showNotice(formError, error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    backdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    loadCases();
+  </script>
+</body>
+</html>

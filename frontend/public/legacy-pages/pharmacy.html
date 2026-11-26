@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediCare - Pharmacy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="assets/css/enterprise.css" rel="stylesheet">
+  <style>
+    body { background:#f5f7fb; font-family:'Segoe UI',sans-serif; }
+    .card { background:#fff; border-radius:1rem; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); border:1px solid #e2e8f0; }
+    .no-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
+    .no-scrollbar::-webkit-scrollbar { display:none; }
+  </style>
+</head>
+<body class="enterprise">
+  <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+  <div class="flex min-h-screen">
+    <aside id="sidebar" class="app-sidebar" aria-label="Main navigation">
+      <a class="brand" href="dashboard.html">
+        <span class="brand-mark"><i class="fa-solid fa-hospital" aria-hidden="true"></i></span>
+        <span><span class="brand-name">MediCare</span><span class="brand-caption">Hospital operations</span></span>
+      </a>
+      <div class="nav-caption">Workspace</div>
+      <nav class="app-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-chart-pie"></i>Overview</a>
+        <a href="patient details.html"><i class="fa-solid fa-user-group"></i>Patients</a>
+        <a href="doctor details.html"><i class="fa-solid fa-user-doctor"></i>Doctors</a>
+        <a href="appointment details.html"><i class="fa-solid fa-calendar-check"></i>Appointments</a>
+        <a href="emergancy case.html"><i class="fa-solid fa-truck-medical"></i>Emergency</a>
+        <a href="staff details.html"><i class="fa-solid fa-people-group"></i>Staff</a>
+        <a href="room details.html"><i class="fa-solid fa-bed"></i>Rooms &amp; beds</a>
+        <a href="ICU details.html"><i class="fa-solid fa-heart-pulse"></i>ICU</a>
+        <a class="active" aria-current="page" href="pharmacy.html"><i class="fa-solid fa-capsules"></i>Pharmacy</a>
+        <a href="laboratory.html"><i class="fa-solid fa-flask"></i>Laboratory</a>
+        <a href="billing.html"><i class="fa-solid fa-file-invoice-dollar"></i>Billing</a>
+        <a href="report details.html"><i class="fa-solid fa-chart-column"></i>Reports</a>
+        <a href="settings.html"><i class="fa-solid fa-gear"></i>Settings</a>
+      </nav>
+      <button class="sidebar-logout" type="button" data-logout><i class="fa-solid fa-arrow-right-from-bracket"></i>Sign out</button>
+    </aside>
+
+    <div class="flex-1 relative overflow-auto md:pl-64">
+      <header class="bg-white h-20 flex items-center justify-between px-6 md:px-8 border-b fixed top-0 left-0 right-0 md:left-64 z-30">
+        <div class="flex items-center gap-4 flex-1">
+          <button id="sidebarToggle" class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false">
+            <i class="fa-solid fa-bars text-xl"></i>
+          </button>
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">Pharmacy</h1>
+            <p class="text-sm text-slate-500">Manage stock, orders, and inventory.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
+          <div class="relative">
+            <button id="notificationBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500"></span>
+            </button>
+            <div id="notificationPanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Notifications</h3>
+                <span class="text-xs text-blue-600">3 new</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-blue-50 p-2">New lab report ready for Amina Khan.</div>
+                <div class="rounded-lg bg-green-50 p-2">Room ICU-1 is now available.</div>
+                <div class="rounded-lg bg-amber-50 p-2">Appointment reminder for 2:00 PM.</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative">
+            <button id="messageBtn" type="button" class="relative p-2 rounded-full hover:bg-slate-100 focus:outline-none">
+              <i class="fa-regular fa-message text-xl"></i>
+              <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+            </button>
+            <div id="messagePanel" class="hidden absolute right-0 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl z-40">
+              <div class="mb-2 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-800">Messages</h3>
+                <span class="text-xs text-blue-600">2 unread</span>
+              </div>
+              <div class="space-y-2 text-sm text-slate-600">
+                <div class="rounded-lg bg-slate-50 p-2">Dr. Silva: Patient vitals updated.</div>
+                <div class="rounded-lg bg-slate-50 p-2">Nurse team: ICU shift changed.</div>
+              </div>
+            </div>
+          </div>
+          <img src="assets/image/profile.png" class="w-10 h-10 rounded-full" alt="Profile">
+          <div>
+            <h4 id="profileName" class="font-semibold" data-profile-name></h4>
+            <p id="profileRole" class="text-sm text-slate-500" data-profile-role></p>
+          </div>
+        </div>
+      </header>
+
+      <main class="p-6 md:p-8 mt-24">
+        <div class="max-w-7xl mx-auto space-y-6">
+          <section class="grid gap-6 lg:grid-cols-3">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+              <h2 class="text-sm font-medium text-slate-500">Total Medicines</h2>
+              <p id="medicineCount" class="mt-4 text-3xl font-bold text-slate-900">—</p>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+              <h2 class="text-sm font-medium text-slate-500">Low Stock</h2>
+              <p id="lowStockCount" class="mt-4 text-3xl font-bold text-amber-600">—</p>
+            </div>
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+              <h2 class="text-sm font-medium text-slate-500">Expiring Soon</h2>
+              <p id="expiringCount" class="mt-4 text-3xl font-bold text-blue-600">—</p>
+            </div>
+          </section>
+
+          <section class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+              <div>
+                <h2 class="text-2xl font-bold text-slate-900">Pharmacy Inventory</h2>
+                <p class="text-sm text-slate-500">Add and track pharmacy stock with ease.</p>
+              </div>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input id="searchInput" type="search" placeholder="Search medicine..." class="w-full sm:w-72 rounded-full border border-slate-200 bg-slate-100 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+                <button id="addMedicineBtn" class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">
+                  <i class="fa-solid fa-plus"></i> Add Medicine
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table id="pharmacyTable" class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-100">
+                  <tr>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Medicine</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Category</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Supplier</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Quantity</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Price</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Expiry</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Status</th>
+                    <th class="px-6 py-3 text-left font-semibold text-slate-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="addMedicineModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 id="medicineModalTitle" class="text-2xl font-bold text-slate-900">Add Medicine</h2>
+          <p id="medicineModalDescription" class="text-sm text-slate-500">Enter new stock details below.</p>
+        </div>
+        <button id="closeModalBtn" class="text-slate-500 hover:text-slate-900">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <form id="medicineForm" class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-3">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Medicine Name</label>
+            <input id="medicineName" type="text" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Category</label>
+            <input id="medicineCategory" type="text" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Supplier</label>
+            <input id="medicineSupplier" type="text" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+          </div>
+        </div>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Quantity</label>
+            <input id="medicineQuantity" type="number" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" min="0" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Price</label>
+            <input id="medicinePrice" type="number" min="0" step="0.01" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" required>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Expiry Date</label>
+            <input id="medicineExpiry" type="date" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
+          </div>
+        </div>
+        <button id="saveMedicineButton" type="submit" class="mt-4 rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Add Medicine</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/auth.js"></script>
+  <script>
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const addMedicineBtn = document.getElementById('addMedicineBtn');
+    const addMedicineModal = document.getElementById('addMedicineModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const medicineForm = document.getElementById('medicineForm');
+    const pharmacyTable = document.getElementById('pharmacyTable').querySelector('tbody');
+    const searchInput = document.getElementById('searchInput');
+    let editingMedicineId = null;
+    let medicines = [];
+
+    async function getApiError(response, fallback) {
+      try {
+        const body = await response.json();
+        return body.message || body.error || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('open');
+      sidebarToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    sidebarToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.toggle('open');
+      sidebarBackdrop.classList.toggle('open', isOpen);
+      sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeSidebar();
+    });
+
+    function openMedicineModal(medicine) {
+      medicineForm.reset();
+      editingMedicineId = medicine ? medicine._id : null;
+      document.getElementById('medicineModalTitle').textContent = medicine ? 'Edit Medicine' : 'Add Medicine';
+      document.getElementById('medicineModalDescription').textContent = medicine ? 'Update the inventory record.' : 'Enter new stock details below.';
+      document.getElementById('saveMedicineButton').textContent = medicine ? 'Save Changes' : 'Add Medicine';
+      if (medicine) {
+        document.getElementById('medicineName').value = medicine.name || '';
+        document.getElementById('medicineCategory').value = medicine.category || '';
+        document.getElementById('medicineSupplier').value = medicine.supplier || '';
+        document.getElementById('medicineQuantity').value = medicine.stock ?? '';
+        document.getElementById('medicinePrice').value = medicine.price ?? '';
+        document.getElementById('medicineExpiry').value = medicine.expiryDate ? medicine.expiryDate.slice(0, 10) : '';
+      }
+      addMedicineModal.classList.remove('hidden');
+      addMedicineModal.classList.add('flex');
+    }
+
+    addMedicineBtn.addEventListener('click', () => {
+      openMedicineModal(null);
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      addMedicineModal.classList.add('hidden');
+      addMedicineModal.classList.remove('flex');
+      medicineForm.reset();
+      editingMedicineId = null;
+    });
+
+    addMedicineModal.addEventListener('click', (event) => {
+      if (event.target === addMedicineModal) {
+        addMedicineModal.classList.add('hidden');
+        addMedicineModal.classList.remove('flex');
+        medicineForm.reset();
+        editingMedicineId = null;
+      }
+    });
+
+    function renderMedicines(medicines) {
+     const now = new Date();
+     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+     const expiryLimit = new Date(today);
+     expiryLimit.setDate(expiryLimit.getDate() + 30);
+     document.getElementById('medicineCount').textContent = String(medicines.length);
+     document.getElementById('lowStockCount').textContent = String(medicines.filter((medicine) => Number(medicine.stock || 0) <= Number(medicine.reorderLevel ?? 10)).length);
+     document.getElementById('expiringCount').textContent = String(medicines.filter((medicine) => {
+       if (!medicine.expiryDate) return false;
+       const expiry = new Date(`${medicine.expiryDate}T00:00:00`);
+       return !Number.isNaN(expiry.getTime()) && expiry >= today && expiry <= expiryLimit;
+     }).length);
+
+     const filter = searchInput.value.trim().toLowerCase();
+     const visibleMedicines = medicines.filter((medicine) =>
+       [medicine.name, medicine.category, medicine.supplier, medicine.stock, medicine.price, medicine.expiryDate]
+         .some((value) => String(value ?? '').toLowerCase().includes(filter))
+     );
+     if (!visibleMedicines.length) {
+       const row = document.createElement('tr');
+       const cell = document.createElement('td');
+       cell.colSpan = 8;
+       cell.className = 'px-6 py-4 text-slate-500';
+       cell.textContent = medicines.length ? 'No medicines match your search.' : 'No medicines found.';
+       row.appendChild(cell);
+       pharmacyTable.replaceChildren(row);
+       return;
+     }
+
+     pharmacyTable.replaceChildren();
+     visibleMedicines.forEach((medicine) => {
+        const stock = Number(medicine.stock || 0);
+        const reorderLevel = Number(medicine.reorderLevel ?? 10);
+        const status = stock <= reorderLevel ? 'Low Stock' : 'In Stock';
+       const row = document.createElement('tr');
+       row.className = 'hover:bg-slate-50';
+       [medicine.name, medicine.category || '-', medicine.supplier || '-', medicine.stock, `₹${Number(medicine.price).toFixed(2)}`, medicine.expiryDate || '-'].forEach((value) => {
+         const cell = document.createElement('td');
+         cell.className = 'px-6 py-4';
+         cell.textContent = String(value);
+         row.appendChild(cell);
+       });
+       const statusCell = document.createElement('td');
+       statusCell.className = 'px-6 py-4';
+       const statusBadge = document.createElement('span');
+       statusBadge.className = `inline-flex rounded-full px-3 py-1 text-xs font-semibold ${status === 'Low Stock' ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`;
+       statusBadge.textContent = status;
+       statusCell.appendChild(statusBadge);
+       row.appendChild(statusCell);
+
+       const actionsCell = document.createElement('td');
+       actionsCell.className = 'px-6 py-4 whitespace-nowrap';
+       const editButton = document.createElement('button');
+       editButton.type = 'button';
+       editButton.className = 'mr-3 font-semibold text-blue-700 hover:text-blue-900';
+       editButton.dataset.action = 'edit';
+       editButton.dataset.id = medicine._id;
+       editButton.textContent = 'Edit';
+       const deleteButton = document.createElement('button');
+       deleteButton.type = 'button';
+       deleteButton.className = 'font-semibold text-red-600 hover:text-red-800';
+       deleteButton.dataset.action = 'delete';
+       deleteButton.dataset.id = medicine._id;
+       deleteButton.textContent = 'Delete';
+       actionsCell.append(editButton, deleteButton);
+       row.appendChild(actionsCell);
+       pharmacyTable.appendChild(row);
+     });
+    }
+
+    async function loadMedicines() {
+      try {
+        const response = await fetch('/api/medicines');
+        if (!response.ok) throw new Error(await getApiError(response, 'Unable to load medicines'));
+        medicines = await response.json();
+        renderMedicines(medicines);
+      } catch (error) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 8;
+        cell.className = 'px-6 py-4 text-red-500';
+        cell.textContent = error.message;
+        row.appendChild(cell);
+        pharmacyTable.replaceChildren(row);
+      }
+    }
+
+    pharmacyTable.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const medicine = medicines.find((item) => item._id === button.dataset.id);
+      if (!medicine) return;
+      if (button.dataset.action === 'edit') {
+        openMedicineModal(medicine);
+        return;
+      }
+      if (button.dataset.action !== 'delete' || !confirm(`Delete ${medicine.name}? This cannot be undone.`)) return;
+      try {
+        const response = await fetch(`/api/medicines/${encodeURIComponent(medicine._id)}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(await getApiError(response, 'Unable to delete medicine'));
+        await loadMedicines();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    medicineForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const name = document.getElementById('medicineName').value.trim();
+      const category = document.getElementById('medicineCategory').value.trim();
+      const supplier = document.getElementById('medicineSupplier').value.trim();
+      const quantity = document.getElementById('medicineQuantity').value.trim();
+      const price = Number(document.getElementById('medicinePrice').value);
+      const expiry = document.getElementById('medicineExpiry').value;
+
+      if (!name || !category || !quantity || !Number.isFinite(price) || price < 0) return;
+      const currentMedicine = editingMedicineId && medicines.find((medicine) => medicine._id === editingMedicineId);
+
+      try {
+        const response = await fetch(editingMedicineId ? `/api/medicines/${encodeURIComponent(editingMedicineId)}` : '/api/medicines', {
+          method: editingMedicineId ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            category,
+            supplier,
+            stock: Number(quantity),
+            price,
+            reorderLevel: currentMedicine ? Number(currentMedicine.reorderLevel ?? 10) : 10,
+            expiryDate: expiry || ''
+          })
+        });
+        if (!response.ok) {
+          const fallback = editingMedicineId ? 'Unable to update medicine' : 'Unable to add medicine';
+          throw new Error(await getApiError(response, fallback));
+        }
+        medicineForm.reset();
+        addMedicineModal.classList.add('hidden');
+        addMedicineModal.classList.remove('flex');
+        editingMedicineId = null;
+        await loadMedicines();
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    searchInput.addEventListener('input', () => {
+      renderMedicines(medicines);
+    });
+
+    loadMedicines();
+  </script>
+</body>
+</html>
