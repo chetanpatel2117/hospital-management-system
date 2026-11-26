@@ -6,6 +6,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 const { promisify } = require('util');
+const { normalizeRole, roleLabel, hasPermission } = require('./permissions');
 
 const projectRoot = path.resolve(__dirname, '..');
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -136,10 +137,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Hospital API is running' });
 });
 
-function signSession(username, role) {
+function signSession(username, role, sessionVersion = 0) {
   const payload = Buffer.from(JSON.stringify({
     username,
     role,
+    sessionVersion,
     expiresAt: Date.now() + sessionDurationSeconds * 1000
   })).toString('base64url');
   const signature = crypto.createHmac('sha256', sessionSecret).update(payload).digest('base64url');
@@ -177,13 +179,46 @@ function getSessionToken(req) {
   return cookie ? cookie.slice('hospital_session='.length) : null;
 }
 
-function requireAuthentication(req, res, next) {
+async function requireAuthentication(req, res, next) {
   const session = readSession(getSessionToken(req));
   if (!session) {
     return res.status(401).json({ message: 'Please sign in to continue' });
   }
-  req.auth = session;
+  try {
+    const account = await User.findOne({ username: session.username }).select('role status sessionVersion').lean();
+    if (!account || (account.status && !/^active$/i.test(account.status))) {
+      clearSessionCookie(res);
+      return res.status(401).json({ message: 'Your account is unavailable. Please sign in again.' });
+    }
+    if ((session.sessionVersion || 0) !== (account.sessionVersion || 0) || normalizeRole(session.role) !== normalizeRole(account.role)) {
+      clearSessionCookie(res);
+      return res.status(401).json({ message: 'Your account permissions changed. Please sign in again.' });
+    }
+    req.auth = { ...session, role: account.role };
+    next();
+  } catch (error) {
+    console.error('Unable to verify account session:', error.message);
+    res.status(503).json({ message: 'Unable to verify your account session' });
+  }
+}
+
+function requireMappedRole(req, res, next) {
+  const role = normalizeRole(req.auth.role);
+  if (!role) {
+    clearSessionCookie(res);
+    return res.status(403).json({ message: 'Your account role is not mapped to an access policy. Contact an administrator.' });
+  }
+  req.auth.normalizedRole = role;
   next();
+}
+
+function requirePermission(module, action) {
+  return (req, res, next) => {
+    if (!hasPermission(req.auth.role, module, action)) {
+      return res.status(403).json({ message: `Your role does not have permission to ${action} ${module}.` });
+    }
+    next();
+  };
 }
 
 function setSessionCookie(res, token) {
@@ -226,7 +261,7 @@ function validAppointmentTime(value) {
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
-app.get('/api/dashboard/stats', requireAuthentication, async (req, res) => {
+app.get('/api/dashboard/stats', requireAuthentication, requireMappedRole, requirePermission('adminDashboard', 'read'), async (req, res) => {
   try {
     const [patients, appointments, bills, medicines, labTests, rooms] = await Promise.all([
       Patient.countDocuments(),
@@ -270,12 +305,18 @@ app.post('/api/login', async (req, res) => {
     if (!verification.valid) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
+    if (!normalizeRole(user.role)) {
+      return res.status(403).json({ message: 'Your account role is not mapped to an access policy. Contact an administrator.' });
+    }
+    if (user.status && !/^active$/i.test(user.status)) {
+      return res.status(403).json({ message: 'Your account is inactive. Contact an administrator.' });
+    }
     if (verification.needsUpgrade) {
       user.password = await hashPassword(password);
       await user.save();
     }
 
-    setSessionCookie(res, signSession(user.username, user.role));
+    setSessionCookie(res, signSession(user.username, user.role, user.sessionVersion || 0));
     res.json({
       username: user.username,
       name: user.name,
@@ -299,7 +340,168 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: 'Signed out successfully' });
 });
 
-app.use('/api', requireAuthentication);
+app.use('/api', requireAuthentication, requireMappedRole);
+
+function userSummary(user) {
+  return {
+    _id: user._id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    email: user.email,
+    phone: user.phone,
+    address: user.address,
+    department: user.department,
+    employeeId: user.employeeId,
+    status: user.status,
+    createdAt: user.createdAt
+  };
+}
+
+function isActiveAccount(status) {
+  return !status || /^active$/i.test(status);
+}
+
+async function hasOtherActiveAdministrator(user) {
+  const otherUsers = await User.find({ _id: { $ne: user._id } }).select('role status').lean();
+  return otherUsers.some((other) => normalizeRole(other.role) === 'administrator' && isActiveAccount(other.status));
+}
+
+function validEmail(value) {
+  return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+app.get('/api/users', requirePermission('userManagement', 'read'), async (req, res) => {
+  try {
+    const users = await User.find().select('username name role email phone address department employeeId status createdAt').sort({ createdAt: -1 }).lean();
+    res.json(users.map(userSummary));
+  } catch (error) {
+    console.error('Unable to list user accounts:', error.message);
+    res.status(500).json({ message: 'Unable to load user accounts' });
+  }
+});
+
+app.post('/api/users', requirePermission('userManagement', 'create'), async (req, res) => {
+  try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ message: 'User details must be sent as an object' });
+    }
+    const { username, password, name, email = '', phone = '', address = '', role, department = '', employeeId = '', status = 'Active' } = req.body;
+    const assignedRole = roleLabel(role);
+    if (typeof username !== 'string' || !/^[A-Za-z0-9._-]{3,32}$/.test(username.trim())) {
+      return res.status(400).json({ message: 'Username must be 3-32 characters using letters, numbers, dots, underscores, or hyphens' });
+    }
+    if (typeof name !== 'string' || !name.trim()) return res.status(400).json({ message: 'A full name is required' });
+    if (typeof password !== 'string' || password.length < 12) return res.status(400).json({ message: 'Temporary password must be at least 12 characters' });
+    if (!assignedRole) return res.status(400).json({ message: 'Select a supported account role' });
+    if ([email, phone, address, department, employeeId].some((value) => typeof value !== 'string')) {
+      return res.status(400).json({ message: 'Email, phone, address, department, and employee ID must be text values' });
+    }
+    if (typeof status !== 'string') return res.status(400).json({ message: 'Account status must be Active or Inactive' });
+    if (!validEmail(email)) return res.status(400).json({ message: 'Provide a valid email address' });
+    if (!/^(active|inactive)$/i.test(status)) return res.status(400).json({ message: 'Account status must be Active or Inactive' });
+
+    const user = await User.create({
+      username: username.trim(),
+      password: await hashPassword(password),
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      role: assignedRole,
+      department: department.trim(),
+      employeeId: employeeId.trim(),
+      status: /^active$/i.test(status) ? 'Active' : 'Inactive'
+    });
+    res.status(201).json(userSummary(user));
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ message: 'That username is already in use' });
+    if (error.name === 'ValidationError') return res.status(400).json({ message: error.message });
+    console.error('Unable to create user account:', error.message);
+    res.status(500).json({ message: 'Unable to create the user account' });
+  }
+});
+
+app.put('/api/users/:id', requirePermission('userManagement', 'update'), async (req, res) => {
+  try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ message: 'User updates must be sent as an object' });
+    }
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid user ID' });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (req.body.username !== undefined && req.body.username !== user.username) {
+      return res.status(400).json({ message: 'Usernames cannot be changed after account creation' });
+    }
+
+    const updates = {};
+    for (const field of ['name', 'email', 'phone', 'address', 'department', 'employeeId']) {
+      if (req.body[field] === undefined) continue;
+      if (typeof req.body[field] !== 'string') return res.status(400).json({ message: `${field} must be a string` });
+      updates[field] = req.body[field].trim();
+    }
+    if (updates.name !== undefined && !updates.name) return res.status(400).json({ message: 'A full name is required' });
+    if (updates.email !== undefined && !validEmail(updates.email)) return res.status(400).json({ message: 'Provide a valid email address' });
+
+    if (req.body.role !== undefined) {
+      const assignedRole = roleLabel(req.body.role);
+      if (!assignedRole) return res.status(400).json({ message: 'Select a supported account role' });
+      updates.role = assignedRole;
+    }
+    if (req.body.status !== undefined) {
+      if (typeof req.body.status !== 'string' || !/^(active|inactive)$/i.test(req.body.status)) {
+        return res.status(400).json({ message: 'Account status must be Active or Inactive' });
+      }
+      updates.status = /^active$/i.test(req.body.status) ? 'Active' : 'Inactive';
+    }
+    if (req.body.password !== undefined && req.body.password !== '') {
+      if (typeof req.body.password !== 'string' || req.body.password.length < 12) {
+        return res.status(400).json({ message: 'Temporary password must be at least 12 characters' });
+      }
+      if (user.username === req.auth.username) {
+        return res.status(400).json({ message: 'You cannot reset your own password from User Management' });
+      }
+      updates.password = await hashPassword(req.body.password);
+    }
+
+    const roleChanged = updates.role && normalizeRole(updates.role) !== normalizeRole(user.role);
+    const statusChanged = updates.status && updates.status !== user.status;
+    if (user.username === req.auth.username && (roleChanged || updates.status === 'Inactive')) {
+      return res.status(409).json({ message: 'You cannot change your own role or deactivate your own account' });
+    }
+    if (normalizeRole(user.role) === 'administrator' && isActiveAccount(user.status)
+      && (updates.role && normalizeRole(updates.role) !== 'administrator' || updates.status === 'Inactive')
+      && !await hasOtherActiveAdministrator(user)) {
+      return res.status(409).json({ message: 'At least one active administrator account must remain' });
+    }
+
+    Object.assign(user, updates);
+    if (roleChanged || statusChanged || updates.password) user.sessionVersion = (user.sessionVersion || 0) + 1;
+    await user.save();
+    res.json(userSummary(user));
+  } catch (error) {
+    if (error.name === 'ValidationError') return res.status(400).json({ message: error.message });
+    console.error('Unable to update user account:', error.message);
+    res.status(500).json({ message: 'Unable to update the user account' });
+  }
+});
+
+app.delete('/api/users/:id', requirePermission('userManagement', 'delete'), async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid user ID' });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.username === req.auth.username) return res.status(409).json({ message: 'You cannot delete your own account' });
+    if (normalizeRole(user.role) === 'administrator' && isActiveAccount(user.status) && !await hasOtherActiveAdministrator(user)) {
+      return res.status(409).json({ message: 'At least one active administrator account must remain' });
+    }
+    await User.findByIdAndDelete(user._id);
+    res.json({ message: 'User account deleted successfully' });
+  } catch (error) {
+    console.error('Unable to delete user account:', error.message);
+    res.status(500).json({ message: 'Unable to delete the user account' });
+  }
+});
 
 app.get('/api/auth/me', async (req, res) => {
   try {
@@ -313,17 +515,28 @@ app.get('/api/auth/me', async (req, res) => {
   }
 });
 
-app.get('/api/dashboard/overview', async (req, res) => {
+app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async (req, res) => {
   try {
+    const canRead = (module) => hasPermission(req.auth.role, module, 'read');
+    const canReadPatients = canRead('patients');
+    const canReadAppointments = canRead('appointments');
+    const canReadBilling = canRead('billing');
+    const canReadRooms = canRead('rooms');
+    const canReadLaboratory = canRead('laboratory');
+    const canReadStaff = canRead('staff');
+    const canReadDoctors = canRead('doctors');
+    const canReadEmergency = canRead('emergency');
+    const canReadPharmacy = canRead('pharmacy');
+    const staffQuery = canReadStaff ? {} : canReadDoctors ? { role: /doctor|consultant|physician/i } : null;
     const [patients, appointments, bills, rooms, labTests, staff, emergencyCases, medicines] = await Promise.all([
-      Patient.find().sort({ createdAt: -1 }).lean(),
-      Appointment.find().sort({ date: 1, time: 1 }).lean(),
-      Bill.find().sort({ createdAt: -1 }).lean(),
-      Room.find().lean(),
-      LabTest.find().lean(),
-      Staff.find().sort({ createdAt: -1 }).lean(),
-      EmergencyCase.find().sort({ createdAt: -1 }).lean(),
-      Medicine.find().sort({ updatedAt: -1 }).lean()
+      canReadPatients ? Patient.find().sort({ createdAt: -1 }).lean() : Promise.resolve([]),
+      canReadAppointments ? Appointment.find().sort({ date: 1, time: 1 }).lean() : Promise.resolve([]),
+      canReadBilling ? Bill.find().sort({ createdAt: -1 }).lean() : Promise.resolve([]),
+      canReadRooms ? Room.find().lean() : Promise.resolve([]),
+      canReadLaboratory ? LabTest.find().sort({ createdAt: -1 }).lean() : Promise.resolve([]),
+      staffQuery ? Staff.find(staffQuery).sort({ createdAt: -1 }).lean() : Promise.resolve([]),
+      canReadEmergency ? EmergencyCase.find().sort({ createdAt: -1 }).lean() : Promise.resolve([]),
+      canReadPharmacy ? Medicine.find().sort({ updatedAt: -1 }).lean() : Promise.resolve([])
     ]);
 
     const today = new Date();
@@ -415,31 +628,68 @@ app.get('/api/dashboard/overview', async (req, res) => {
     ].filter((item) => item.title && item.updatedAt && !Number.isNaN(new Date(item.updatedAt).getTime()))
       .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt))
       .slice(0, 8);
+    const stats = {};
+    const trends = {};
+    if (canReadPatients) {
+      stats.patients = patients.length;
+      trends.patientsAdded30d = patientsInPeriod;
+      trends.patientsAdded30dChange = patientsInPeriod - patientsInPreviousPeriod;
+    }
+    if (canReadDoctors || canReadStaff) stats.doctors = doctorRecords.length;
+    if (canReadAppointments) {
+      stats.appointments = appointments.length;
+      stats.pendingAppointments = pendingAppointments.length;
+      trends.appointments30d = appointmentsInPeriod;
+      trends.appointments30dChange = appointmentsInPeriod - appointmentsInPreviousPeriod;
+    }
+    if (canReadRooms) {
+      stats.availableBeds = availableBeds;
+      stats.occupiedBeds = rooms.filter((room) => room.status === 'Occupied').reduce((total, room) => total + Number(room.capacity || 1), 0);
+    }
+    if (canReadStaff) stats.staff = staff.length;
+    if (canReadBilling) {
+      stats.todaysRevenue = todaysRevenue;
+      stats.paidTotal = paidTotal;
+      trends.todaysRevenueChange = todaysRevenue - yesterdaysRevenue;
+    }
+    if (canReadEmergency) stats.emergencyCases = emergencyCases.filter((item) => item.status === 'Active').length;
+    if (canReadLaboratory) {
+      stats.labTests = labTests.length;
+      stats.pendingLabTests = labTests.filter((item) => !/^(cancelled|completed)$/i.test(item.status || '')).length;
+      stats.reportsReady = labTests.filter((item) => item.reportReady).length;
+    }
+    if (canReadPharmacy) {
+      stats.medicines = medicines.length;
+      stats.lowStock = medicines.filter((item) => Number(item.stock) <= Number(item.reorderLevel ?? 10)).length;
+      stats.expiringMedicines = medicines.filter((item) => {
+        if (!item.expiryDate) return false;
+        const expiryDate = new Date(`${item.expiryDate}T00:00:00`);
+        const expiringLimit = new Date(todayStart);
+        expiringLimit.setDate(expiringLimit.getDate() + 30);
+        return !Number.isNaN(expiryDate.getTime()) && expiryDate >= todayStart && expiryDate <= expiringLimit;
+      }).length;
+    }
+    if (Object.keys(trends).length) stats.trends = trends;
+    const labStatuses = Array.from(labTests.reduce((counts, test) => {
+      const status = test.status || 'Unspecified';
+      counts.set(status, (counts.get(status) || 0) + 1);
+      return counts;
+    }, new Map()), ([label, value]) => ({ label, value }));
+    const medicineCategories = Array.from(medicines.reduce((counts, medicine) => {
+      const category = medicine.category || 'Unspecified';
+      counts.set(category, (counts.get(category) || 0) + 1);
+      return counts;
+    }, new Map()), ([label, value]) => ({ label, value }));
 
     res.json({
-      stats: {
-        patients: patients.length,
-        doctors: doctorRecords.length,
-        appointments: appointments.length,
-        availableBeds,
-        staff: staff.length,
-        todaysRevenue,
-        pendingAppointments: pendingAppointments.length,
-        emergencyCases: emergencyCases.filter((item) => item.status === 'Active').length,
-        paidTotal,
-        trends: {
-          patientsAdded30d: patientsInPeriod,
-          patientsAdded30dChange: patientsInPeriod - patientsInPreviousPeriod,
-          appointments30d: appointmentsInPeriod,
-          appointments30dChange: appointmentsInPeriod - appointmentsInPreviousPeriod,
-          todaysRevenueChange: todaysRevenue - yesterdaysRevenue
-        }
-      },
+      stats,
       recentPatients: patients.slice(0, 5),
       todaysAppointments: appointments.filter((appointment) => appointment.date === todayKey).slice(0, 6),
       recentTransactions: bills.slice(0, 5),
       recentActivities,
       recentEmergencyCases: emergencyCases.filter((item) => item.status === 'Active').slice(0, 5),
+      recentLabTests: labTests.slice(0, 5),
+      recentMedicines: medicines.slice(0, 5),
       doctors: doctorRecords.slice(0, 5).map((doctor) => ({
         name: doctor.name,
         department: doctor.department || 'Department not set',
@@ -457,11 +707,8 @@ app.get('/api/dashboard/overview', async (req, res) => {
           value: rooms.filter((room) => room.status === status)
             .reduce((total, room) => total + Number(room.capacity || 1), 0)
         })),
-        labStatuses: Array.from(labTests.reduce((counts, test) => {
-          const status = test.status || 'Unspecified';
-          counts.set(status, (counts.get(status) || 0) + 1);
-          return counts;
-        }, new Map()), ([label, value]) => ({ label, value }))
+        labStatuses,
+        medicineCategories
       }
     });
   } catch (error) {
@@ -470,7 +717,7 @@ app.get('/api/dashboard/overview', async (req, res) => {
   }
 });
 
-app.get('/api/reports/summary', async (req, res) => {
+app.get('/api/reports/summary', requirePermission('reports', 'read'), async (req, res) => {
   try {
     const now = new Date();
     const defaultTo = now.toISOString().slice(0, 10);
@@ -588,17 +835,40 @@ app.get('/api/reports/summary', async (req, res) => {
   }
 });
 
+const resourceModules = {
+  patients: 'patients',
+  appointments: 'appointments',
+  bills: 'billing',
+  medicines: 'pharmacy',
+  'lab-tests': 'laboratory',
+  rooms: 'rooms',
+  staff: 'staff',
+  'emergency-cases': 'emergency'
+};
+
+function requireResourcePermission(routeName, action) {
+  return (req, res, next) => {
+    const module = routeName === 'staff' && action === 'read' && req.auth.normalizedRole === 'receptionist'
+      ? 'doctors'
+      : resourceModules[routeName];
+    return requirePermission(module, action)(req, res, next);
+  };
+}
+
 function buildCrudRoutes(model, entityName, routeName) {
-  app.get(`/api/${routeName}`, async (req, res) => {
+  app.get(`/api/${routeName}`, requireResourcePermission(routeName, 'read'), async (req, res) => {
     try {
-      const docs = await model.find().sort({ createdAt: -1 });
+      const query = routeName === 'staff' && req.auth.normalizedRole === 'receptionist'
+        ? { role: /doctor|consultant|physician/i }
+        : {};
+      const docs = await model.find(query).sort({ createdAt: -1 });
       res.json(docs);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   });
 
-  app.post(`/api/${routeName}`, async (req, res) => {
+  app.post(`/api/${routeName}`, requireResourcePermission(routeName, 'create'), async (req, res) => {
     try {
       if (model === Appointment) {
         const { patientName, doctorName, date, time, status } = req.body;
@@ -626,7 +896,7 @@ function buildCrudRoutes(model, entityName, routeName) {
     }
   });
 
-  app.put(`/api/${routeName}/:id`, async (req, res) => {
+  app.put(`/api/${routeName}/:id`, requireResourcePermission(routeName, 'update'), async (req, res) => {
     try {
       if (model === Appointment) {
         const current = await Appointment.findById(req.params.id);
@@ -657,7 +927,7 @@ function buildCrudRoutes(model, entityName, routeName) {
     }
   });
 
-  app.delete(`/api/${routeName}/:id`, async (req, res) => {
+  app.delete(`/api/${routeName}/:id`, requireResourcePermission(routeName, 'delete'), async (req, res) => {
     try {
       if (model === Staff) {
         const member = await Staff.findById(req.params.id);
@@ -687,7 +957,7 @@ buildCrudRoutes(Room, 'Room', 'rooms');
 buildCrudRoutes(Staff, 'Staff', 'staff');
 buildCrudRoutes(EmergencyCase, 'Emergency case', 'emergency-cases');
 
-app.get('/api/profile/:username', async (req, res) => {
+app.get('/api/profile/:username', requirePermission('settings', 'read'), async (req, res) => {
   try {
     if (req.params.username !== req.auth.username) {
       return res.status(403).json({ message: 'You can only view your own profile' });
@@ -714,7 +984,39 @@ app.get('/api/profile/:username', async (req, res) => {
   }
 });
 
-app.put('/api/profile/:username', async (req, res) => {
+app.post('/api/profile/password', requirePermission('settings', 'update'), async (req, res) => {
+  try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ message: 'Password details must be sent as an object' });
+    }
+    const { currentPassword, newPassword } = req.body;
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword) {
+      return res.status(400).json({ message: 'Current and new passwords are required' });
+    }
+    if (newPassword.length < 12) {
+      return res.status(400).json({ message: 'New password must be at least 12 characters' });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ message: 'Choose a new password different from your current password' });
+    }
+
+    const user = await User.findOne({ username: req.auth.username });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const verification = await verifyPassword(currentPassword, user.password);
+    if (!verification.valid) return res.status(400).json({ message: 'Current password is incorrect' });
+
+    user.password = await hashPassword(newPassword);
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
+    await user.save();
+    setSessionCookie(res, signSession(user.username, user.role, user.sessionVersion));
+    res.json({ message: 'Password changed successfully. Other active sessions have been signed out.' });
+  } catch (error) {
+    console.error('Unable to change account password:', error.message);
+    res.status(500).json({ message: 'Unable to change the account password' });
+  }
+});
+
+app.put('/api/profile/:username', requirePermission('settings', 'update'), async (req, res) => {
   try {
     if (req.params.username !== req.auth.username) {
       return res.status(403).json({ message: 'You can only update your own profile' });
@@ -770,7 +1072,8 @@ const pageRoutes = new Set([
   'report details.html',
   'room details.html',
   'settings.html',
-  'staff details.html'
+  'staff details.html',
+  'users.html'
 ]);
 
 const clientDist = path.join(projectRoot, 'frontend', 'dist');

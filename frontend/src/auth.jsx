@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
       setAuthError('');
       return currentUser;
     } catch (error) {
-      if (/401|sign in/i.test(error.message)) {
+      if (/401|sign in|role is not mapped/i.test(error.message)) {
         setUser(null);
         setAuthError('');
         return null;

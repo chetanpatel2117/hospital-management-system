@@ -8,6 +8,7 @@ body.enterprise {
 .date-chip { padding: 8px 11px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--muted); font-size: 11px; }
 .table-panel, .form-panel { padding: 18px; }
 .modal-wide { width: min(100%, 760px); }
+.section-grid.one { grid-template-columns: minmax(0, 1fr); }
 .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .summary-card { display: grid; gap: 8px; padding: 15px 17px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: var(--shadow); }
 .summary-card span { color: var(--muted); font-size: 11px; }

@@ -13,6 +13,7 @@ A MERN-based Hospital Management System for patient, staff, appointment, billing
 * Manage Doctors
 * Manage Patients
 * Manage Staff
+* Manage User Accounts and Roles
 * Appointment Management
 * Billing & Payments
 * Laboratory Management
@@ -25,7 +26,9 @@ Appointments can be scheduled from existing patient and available-doctor records
 
 ### Current implementation boundaries
 
-The current system authenticates users and displays their role, but does not yet enforce a role-to-module permission matrix. Department management, standalone medical records, notifications, user administration, payment-gateway processing, file uploads for lab reports, and per-bed patient allocation do not have corresponding existing APIs/data models and are not represented as working modules. Room availability is calculated from room capacity and status.
+Role-based page and API permissions are enforced: administrators have full access; doctors can read patients and lab records and read/update appointments; receptionists can manage patients, appointments, and billing while reading doctors and rooms; nurses can read/update patients, rooms, and lab records and read appointments; pharmacy staff manage inventory; and lab staff manage tests and read patients. Unmapped account roles are denied module access. Appointment records are linked to people by name, not user/staff IDs, so doctor appointments are not restricted to an assigned-doctor relationship.
+
+Department management, standalone medical records, notifications, payment-gateway processing, file uploads for lab reports, and per-bed patient allocation do not have corresponding APIs/data models and are not represented as working modules. Room availability is calculated from room capacity and status. Administrators can create/manage accounts and roles; passwords are stored as scrypt hashes, role/status/password changes invalidate existing sessions, and at least one active administrator is required.
 
 ## Technologies
 

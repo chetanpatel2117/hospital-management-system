@@ -91,7 +91,7 @@ body.enterprise {
 .app-nav a.active i { color: #8ed4d3; }
 .sidebar-logout { width: 100%; margin-top: 12px; }
 
-.app-main { min-height: 100vh; margin-left: 252px; }
+.app-main { min-width: 0; min-height: 100vh; margin-left: 252px; }
 .topbar {
   position: sticky;
   top: 0;

@@ -6,6 +6,7 @@ import {
   Stethoscope, Users, X
 } from 'lucide-react';
 import { useAuth } from '../auth.jsx';
+import { canAccessRole, moduleForPage } from '../permissions.js';
 
 const navigation = [
   { id: 'dashboard', label: 'Overview', href: '/dashboard.html', icon: LayoutDashboard },
@@ -19,6 +20,7 @@ const navigation = [
   { id: 'pharmacy', label: 'Pharmacy', href: '/pharmacy.html', icon: Pill },
   { id: 'laboratory', label: 'Laboratory', href: '/laboratory.html', icon: FlaskConical },
   { id: 'billing', label: 'Billing', href: '/billing.html', icon: CreditCard },
+  { id: 'users', label: 'User management', href: '/users.html', icon: Users },
   { id: 'reports', label: 'Reports', href: '/report%20details.html', icon: ChartNoAxesCombined },
   { id: 'settings', label: 'Settings', href: '/settings.html', icon: Settings }
 ];
@@ -27,6 +29,7 @@ export default function Layout({ activePage, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const visibleNavigation = navigation.filter((item) => canAccessRole(user?.role, moduleForPage(item.id), 'read'));
 
   async function handleSignOut() {
     try {
@@ -47,7 +50,7 @@ export default function Layout({ activePage, children }) {
         </a>
         <div className="nav-caption">Workspace</div>
         <nav className="app-nav">
-          {navigation.map(({ id, label, href, icon: Icon }) => (
+          {visibleNavigation.map(({ id, label, href, icon: Icon }) => (
             <a key={id} href={href} className={activePage === id ? 'active' : ''} aria-current={activePage === id ? 'page' : undefined} onClick={() => setSidebarOpen(false)}>
               <Icon size={17} aria-hidden="true" />{label}
             </a>

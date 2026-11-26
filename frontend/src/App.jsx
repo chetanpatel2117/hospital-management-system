@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './auth.jsx';
 import Layout from './components/Layout.jsx';
 import ResourcePage, { pageConfigs } from './pages/ResourcePage.jsx';
+import { canAccessRole, moduleForPage } from './permissions.js';
 
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'));
@@ -21,6 +22,7 @@ const pageByPath = {
   '/pharmacy.html': 'pharmacy',
   '/laboratory.html': 'laboratory',
   '/billing.html': 'billing',
+  '/users.html': 'users',
   '/report details.html': 'reports',
   '/settings.html': 'settings'
 };
@@ -42,6 +44,9 @@ function LegacyRouteApp() {
 
   const page = pageByPath[path] || (path === '/' ? 'dashboard' : null);
   if (!page) return <main className="not-found"><h1>Page not found</h1><a href="/dashboard.html">Return to dashboard</a></main>;
+  if (!canAccessRole(user.role, moduleForPage(page), 'read')) {
+    return <Layout activePage={page}><div className="notice error" role="alert">Your role does not have access to this module.</div><a className="secondary-button" href="/dashboard.html">Return to your overview</a></Layout>;
+  }
 
   let content;
   if (page === 'dashboard') content = <DashboardPage />;
