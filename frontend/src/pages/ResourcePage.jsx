@@ -2,37 +2,52 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Eye, Plus, Printer, Search } from 'lucide-react';
 import { api } from '../api.js';
 import Modal from '../components/Modal.jsx';
+import AppointmentCalendar from '../components/AppointmentCalendar.jsx';
 
-const fields = (...items) => items.map(([name, label, type = 'text', options = null, required = false]) => ({ name, label, type, options, required }));
+const fields = (...items) => items.map(([name, label, type = 'text', options = null, required = false, source = null, readOnly = false]) => ({ name, label, type, options, required, source, readOnly }));
 const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+const isDoctor = (row) => /doctor|consultant|physician/i.test(row.role || '');
+const isBookableDoctor = (row) => isDoctor(row) && !/^(unavailable|on leave)$/i.test(row.availability || '');
 
 export const pageConfigs = {
   patients: {
     title: 'Patient management', subtitle: 'Maintain patient profiles and clinical records.', endpoint: '/api/patients', singular: 'patient',
     fields: fields(['name', 'Patient name', 'text', null, true], ['age', 'Age', 'number', null, true], ['gender', 'Gender', 'select', ['Male', 'Female', 'Other'], true], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['bloodGroup', 'Blood group', 'select', ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']], ['address', 'Address', 'textarea'], ['condition', 'Department / condition', 'text'], ['medicalHistory', 'Medical history', 'textarea'], ['status', 'Status', 'select', ['Admitted', 'Under Observation', 'Recovered', 'Discharged']]),
+    filters: [{ key: 'gender', label: 'Gender' }, { key: 'status', label: 'Status' }],
     columns: [['name', 'Patient'], ['age', 'Age'], ['gender', 'Gender'], ['phone', 'Contact'], ['bloodGroup', 'Blood group'], ['condition', 'Department'], ['status', 'Status']]
   },
   doctors: {
-    title: 'Doctor management', subtitle: 'Manage clinician profiles, specialties, and availability.', endpoint: '/api/staff', singular: 'doctor', filter: (row) => /doctor|consultant|physician/i.test(row.role || ''),
+    title: 'Doctor management', subtitle: 'Manage clinician profiles, specialties, and availability.', endpoint: '/api/staff', relatedEndpoint: '/api/appointments', singular: 'doctor', filter: isDoctor,
     defaults: { role: 'Doctor', availability: 'Available' },
     fields: fields(['name', 'Doctor name', 'text', null, true], ['role', 'Role', 'text', null, true], ['specialization', 'Specialization', 'text'], ['department', 'Department', 'text'], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
-    columns: [['name', 'Doctor'], ['specialization', 'Specialization'], ['department', 'Department'], ['availability', 'Availability'], ['phone', 'Contact'], ['experienceYears', 'Experience']]
+    columns: [['name', 'Doctor'], ['specialization', 'Specialization'], ['department', 'Department'], ['availability', 'Availability'], ['phone', 'Contact'], ['experienceYears', 'Experience'], ['appointmentCount', 'Appointments']],
+    filters: [{ key: 'department', label: 'Department' }, { key: 'availability', label: 'Availability' }]
   },
   staff: {
     title: 'Staff management', subtitle: 'Maintain workforce details and shift assignments.', endpoint: '/api/staff', singular: 'staff member',
     fields: fields(['name', 'Name', 'text', null, true], ['role', 'Role', 'text', null, true], ['department', 'Department', 'text'], ['specialization', 'Specialization', 'text'], ['experienceYears', 'Experience (years)', 'number'], ['availability', 'Availability', 'select', ['Available', 'Unavailable', 'On leave']], ['phone', 'Phone', 'tel'], ['email', 'Email', 'email'], ['shift', 'Shift', 'select', ['Morning', 'Evening', 'Night', 'Flexible']]),
-    columns: [['name', 'Name'], ['role', 'Role'], ['department', 'Department'], ['phone', 'Contact'], ['shift', 'Shift'], ['availability', 'Availability']]
+    columns: [['name', 'Name'], ['role', 'Role'], ['department', 'Department'], ['phone', 'Contact'], ['shift', 'Shift'], ['availability', 'Availability']],
+    filters: [{ key: 'department', label: 'Department' }, { key: 'role', label: 'Role' }]
   },
   appointments: {
     title: 'Appointment management', subtitle: 'Schedule, update, and track patient appointments.', endpoint: '/api/appointments', singular: 'appointment',
-    fields: fields(['patientName', 'Patient name', 'text', null, true], ['doctorName', 'Doctor name', 'text', null, true], ['department', 'Department', 'text'], ['date', 'Date', 'date', null, true], ['time', 'Time', 'time', null, true], ['status', 'Status', 'select', ['Pending', 'Scheduled', 'Confirmed', 'Completed', 'Cancelled'], true]),
-    columns: [['date', 'Date'], ['time', 'Time'], ['patientName', 'Patient'], ['doctorName', 'Doctor'], ['department', 'Department'], ['status', 'Status']]
+    fields: fields(
+      ['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }],
+      ['doctorName', 'Doctor', 'select', null, true, { endpoint: '/api/staff', value: 'name', label: (doctor) => `${doctor.name} · ${doctor.department || doctor.role}`, filter: isBookableDoctor }],
+      ['department', 'Department', 'select', null, false, { endpoint: '/api/staff', value: 'department', label: (doctor) => doctor.department, filter: (doctor) => isBookableDoctor(doctor) && Boolean(doctor.department) }],
+      ['date', 'Date', 'date', null, true],
+      ['time', 'Time', 'time', null, true],
+      ['status', 'Status', 'select', ['Pending', 'Scheduled', 'Confirmed', 'Completed', 'Cancelled'], true]
+    ),
+    columns: [['date', 'Date'], ['time', 'Time'], ['patientName', 'Patient'], ['doctorName', 'Doctor'], ['department', 'Department'], ['status', 'Status']],
+    filters: [{ key: 'status', label: 'Status' }]
   },
   emergency: {
     title: 'Emergency cases', subtitle: 'Track active cases and emergency response status.', endpoint: '/api/emergency-cases', singular: 'emergency case',
     defaults: { status: 'Active' },
-    fields: fields(['caseId', 'Case ID', 'text', null, true], ['patientName', 'Patient name', 'text', null, true], ['roomNumber', 'Room number'], ['contactNumber', 'Contact number', 'tel'], ['emergencyType', 'Emergency type', 'text', null, true], ['conditionLevel', 'Condition', 'select', ['Critical', 'Serious', 'Stable'], true], ['status', 'Status', 'select', ['Active', 'Resolved']]),
-    columns: [['caseId', 'Case ID'], ['patientName', 'Patient'], ['emergencyType', 'Type'], ['conditionLevel', 'Condition'], ['roomNumber', 'Room'], ['status', 'Status']]
+    fields: fields(['caseId', 'Case ID', 'text', null, true], ['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['roomNumber', 'Room number'], ['contactNumber', 'Contact number', 'tel'], ['emergencyType', 'Emergency type', 'text', null, true], ['conditionLevel', 'Condition', 'select', ['Critical', 'Serious', 'Stable'], true], ['status', 'Status', 'select', ['Active', 'Resolved']]),
+    columns: [['caseId', 'Case ID'], ['patientName', 'Patient'], ['emergencyType', 'Type'], ['conditionLevel', 'Condition'], ['roomNumber', 'Room'], ['status', 'Status']],
+    filters: [{ key: 'conditionLevel', label: 'Condition' }, { key: 'status', label: 'Status' }]
   },
   rooms: {
     title: 'Rooms & beds', subtitle: 'Monitor room availability and occupancy capacity.', endpoint: '/api/rooms', singular: 'room',
@@ -82,7 +97,7 @@ export const pageConfigs = {
   laboratory: {
     title: 'Laboratory', subtitle: 'Manage requests, sample collection, and test results.', endpoint: '/api/lab-tests', singular: 'lab test',
     defaults: { sampleCollected: false, reportReady: false, status: 'Requested', priority: 'Normal' },
-    fields: fields(['patientName', 'Patient name', 'text', null, true], ['patientId', 'Patient ID'], ['testName', 'Test name', 'text', null, true], ['priority', 'Priority', 'select', ['Normal', 'Urgent', 'Critical']], ['status', 'Workflow status', 'select', ['Requested', 'In Progress', 'Completed', 'Cancelled']], ['notes', 'Notes', 'textarea'], ['sampleCollected', 'Sample collected', 'checkbox'], ['sampleType', 'Sample type'], ['collectionTime', 'Collection time', 'datetime-local'], ['collectorName', 'Collector name'], ['reportReady', 'Report ready', 'checkbox'], ['resultStatus', 'Result status', 'select', ['', 'Normal', 'Abnormal', 'Critical']], ['verifiedBy', 'Verified by'], ['findings', 'Findings', 'textarea']),
+    fields: fields(['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['patientId', 'Patient ID', 'text', null, false, null, true], ['testName', 'Test name', 'text', null, true], ['priority', 'Priority', 'select', ['Normal', 'Urgent', 'Critical']], ['status', 'Workflow status', 'select', ['Requested', 'In Progress', 'Completed', 'Cancelled']], ['notes', 'Notes', 'textarea'], ['sampleCollected', 'Sample collected', 'checkbox'], ['sampleType', 'Sample type'], ['collectionTime', 'Collection time', 'datetime-local'], ['collectorName', 'Collector name'], ['reportReady', 'Report ready', 'checkbox'], ['resultStatus', 'Result status', 'select', ['', 'Normal', 'Abnormal', 'Critical']], ['verifiedBy', 'Verified by'], ['findings', 'Findings', 'textarea']),
     columns: [['patientName', 'Patient'], ['testName', 'Test'], ['priority', 'Priority'], ['status', 'Status'], ['sampleCollected', 'Sample'], ['reportReady', 'Report']],
     summary: (items) => [
       ['Total tests', items.length],
@@ -92,7 +107,7 @@ export const pageConfigs = {
   },
   billing: {
     title: 'Billing & payments', subtitle: 'Generate invoices and track recorded payments.', endpoint: '/api/bills', singular: 'bill',
-    fields: fields(['patientName', 'Patient name', 'text', null, true], ['contact', 'Contact', 'tel'], ['email', 'Email', 'email'], ['invoiceNumber', 'Invoice number', 'text', null, true], ['consultationCharges', 'Consultation charges', 'number'], ['medicineCharges', 'Medicine charges', 'number'], ['laboratoryCharges', 'Laboratory charges', 'number'], ['otherCharges', 'Other charges', 'number'], ['paidAmount', 'Amount paid', 'number'], ['paymentMethod', 'Payment method', 'select', ['', 'Cash', 'Card', 'Bank transfer', 'Online']], ['paymentDate', 'Payment date', 'date'], ['dueDate', 'Due date', 'date'], ['status', 'Payment status', 'select', ['Pending', 'Paid', 'Failed']]),
+    fields: fields(['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['contact', 'Contact', 'tel'], ['email', 'Email', 'email'], ['invoiceNumber', 'Invoice number', 'text', null, true], ['consultationCharges', 'Consultation charges', 'number'], ['medicineCharges', 'Medicine charges', 'number'], ['laboratoryCharges', 'Laboratory charges', 'number'], ['otherCharges', 'Other charges', 'number'], ['paidAmount', 'Amount paid', 'number'], ['paymentMethod', 'Payment method', 'select', ['', 'Cash', 'Card', 'Bank transfer', 'Online']], ['paymentDate', 'Payment date', 'date'], ['dueDate', 'Due date', 'date'], ['status', 'Payment status', 'select', ['Pending', 'Paid', 'Failed']]),
     columns: [['invoiceNumber', 'Invoice'], ['patientName', 'Patient'], ['amount', 'Total'], ['paidAmount', 'Paid'], ['paymentMethod', 'Method'], ['status', 'Status'], ['dueDate', 'Due']],
     summary: (items) => [
       ['Total invoices', items.length],
@@ -112,39 +127,92 @@ export default function ResourcePage({ config }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lookupError, setLookupError] = useState('');
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [form, setForm] = useState({});
+  const [lookupData, setLookupData] = useState({});
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterValues, setFilterValues] = useState({});
+  const [appointmentDate, setAppointmentDate] = useState('');
+  const [calendarMode, setCalendarMode] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const pageSize = 10;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
+    setLookupError('');
     try {
+      const lookupEndpoints = [...new Set(config.fields.map((field) => field.source?.endpoint).filter(Boolean))];
       const results = await api(config.endpoint);
-      setRows(Array.isArray(results) ? results : []);
+      if (!Array.isArray(results)) throw new Error(`The server returned invalid ${config.singular} records.`);
+      const auxiliaryResults = await Promise.allSettled([
+        ...(config.relatedEndpoint ? [api(config.relatedEndpoint)] : []),
+        ...lookupEndpoints.map((endpoint) => api(endpoint))
+      ]);
+      let relatedRows = [];
+      let lookupOffset = 0;
+      const auxiliaryErrors = [];
+      if (config.relatedEndpoint) {
+        const relatedResult = auxiliaryResults[0];
+        if (relatedResult.status === 'fulfilled' && Array.isArray(relatedResult.value)) {
+          relatedRows = relatedResult.value;
+        } else {
+          auxiliaryErrors.push(relatedResult.status === 'rejected' ? relatedResult.reason.message : 'The server returned invalid related records.');
+        }
+        lookupOffset = 1;
+      }
+      const lookupDataEntries = lookupEndpoints.map((endpoint, index) => {
+        const result = auxiliaryResults[index + lookupOffset];
+        if (result.status === 'rejected') {
+          auxiliaryErrors.push(result.reason.message);
+          return [endpoint, []];
+        }
+        if (!Array.isArray(result.value)) {
+          auxiliaryErrors.push(`The server returned invalid linked records for ${endpoint}.`);
+          return [endpoint, []];
+        }
+        return [endpoint, result.value];
+      });
+      const records = results;
+      if (config.endpoint === '/api/staff' && config.relatedEndpoint) {
+        const appointmentCounts = relatedRows.reduce((counts, appointment) => {
+          counts.set(appointment.doctorName, (counts.get(appointment.doctorName) || 0) + 1);
+          return counts;
+        }, new Map());
+        setRows(records.map((record) => ({ ...record, appointmentCount: config.relatedEndpoint && !auxiliaryErrors.length ? appointmentCounts.get(record.name) || 0 : undefined })));
+      } else {
+        setRows(records);
+      }
+      setLookupData(Object.fromEntries(lookupDataEntries));
+      if (auxiliaryErrors.length) setLookupError(`Some linked data could not be loaded: ${[...new Set(auxiliaryErrors)].join(' ')}`);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
       setLoading(false);
     }
-  }, [config.endpoint]);
+  }, [config]);
 
   useEffect(() => { load(); }, [load]);
 
   const filteredRows = useMemo(() => {
     const data = config.filter ? rows.filter(config.filter) : rows;
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return data;
-    return data.filter((row) => Object.values(row).some((value) => String(value ?? '').toLowerCase().includes(normalized)));
-  }, [rows, query, config.filter]);
-  const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
-  const visibleRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    return data.filter((row) => {
+      if (normalized && !Object.values(row).some((value) => String(value ?? '').toLowerCase().includes(normalized))) return false;
+      return (config.filters || []).every(({ key }) => !filterValues[key] || String(row[key] || '') === filterValues[key]);
+    });
+  }, [rows, query, config.filter, config.filters, filterValues]);
+  const listRows = config.endpoint === '/api/appointments' && appointmentDate
+    ? filteredRows.filter((row) => row.date === appointmentDate)
+    : filteredRows;
+  const pageCount = Math.max(1, Math.ceil(listRows.length / pageSize));
+  const visibleRows = listRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, pageCount));
@@ -152,7 +220,7 @@ export default function ResourcePage({ config }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query]);
+  }, [query, filterValues, appointmentDate]);
 
   function openCreate() {
     setEditing(null);
@@ -173,6 +241,42 @@ export default function ResourcePage({ config }) {
 
   function updateField(name, value, type) {
     setForm((current) => ({ ...current, [name]: type === 'number' ? (value === '' ? '' : Number(value)) : value }));
+  }
+
+  function updateSelectField(field, value) {
+    updateField(field.name, value, field.type);
+    if (!field.source) return;
+    const option = (lookupData[field.source.endpoint] || []).find((item) => String(item[field.source.value || 'name']) === value);
+    if (!option) return;
+    setForm((current) => {
+      const next = { ...current, [field.name]: value };
+      if (config.endpoint === '/api/appointments' && field.name === 'doctorName') {
+        next.department = option.department || current.department || '';
+      }
+      if (config.endpoint === '/api/lab-tests' && field.name === 'patientName') {
+        next.patientId = option._id || '';
+      }
+      if (config.endpoint === '/api/bills' && field.name === 'patientName') {
+        next.contact = option.phone || '';
+        next.email = option.email || '';
+      }
+      if (config.endpoint === '/api/emergency-cases' && field.name === 'patientName') {
+        next.contactNumber = option.phone || current.contactNumber || '';
+      }
+      return next;
+    });
+  }
+
+  function fieldOptions(field) {
+    if (!field.source) return (field.options || []).map((value) => ({ value, label: value || 'Not specified' }));
+    const options = (lookupData[field.source.endpoint] || [])
+      .filter((item) => !field.source.filter || field.source.filter(item))
+      .map((item) => ({
+        value: String(item[field.source.value || 'name'] || ''),
+        label: field.source.label ? field.source.label(item) : String(item[field.source.value || 'name'] || '')
+      }))
+      .filter((option) => option.value);
+    return [...new Map(options.map((option) => [option.value, option])).values()];
   }
 
   async function submit(event) {
@@ -221,15 +325,26 @@ export default function ResourcePage({ config }) {
       <div className="page-heading"><div><span className="eyebrow">OPERATIONS</span><h1>{config.title}</h1><p>{config.subtitle}</p></div><button className="primary-button" type="button" onClick={openCreate}><Plus size={16} />Add {config.singular}</button></div>
       {notice && <div className="notice success" role="status">{notice}<button className="notice-dismiss" onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
       {error && !dialogOpen && <div className="notice error" role="alert">{error}<button className="notice-dismiss" onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
-      {config.summary && !loading && <section className="summary-grid">{config.summary(config.filter ? rows.filter(config.filter) : rows).map(([label, value]) => <article className="summary-card" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>}
+      {lookupError && !dialogOpen && <div className="notice error" role="alert">{lookupError}</div>}
+      {config.summary && !loading && !error && <section className="summary-grid">{config.summary(config.filter ? rows.filter(config.filter) : rows).map(([label, value]) => <article className="summary-card" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>}
       <section className="table-panel">
-        <div className="toolbar"><label className="search-box"><Search size={16} /><input className="search-field" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${config.singular}s…`} /></label><span className="record-count">{visibleRows.length} records</span></div>
-        {loading ? <div className="loading-state">Loading records…</div> : (
+        <div className="toolbar">
+          <label className="search-box"><Search size={16} /><input className="search-field" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${config.singular}s…`} /></label>
+          {(config.filters || []).map(({ key, label }) => <select className="filter-field" key={key} aria-label={`Filter by ${label}`} value={filterValues[key] || ''} onChange={(event) => setFilterValues((current) => ({ ...current, [key]: event.target.value }))}><option value="">All {label.toLowerCase()}s</option>{[...new Set(rows.map((row) => row[key]).filter(Boolean))].sort().map((value) => <option key={value} value={value}>{value}</option>)}</select>)}
+          {config.endpoint === '/api/appointments' && <>
+            {!calendarMode && <label className="appointment-date-filter"><span className="sr-only">Filter appointments by date</span><input className="filter-field" type="date" value={appointmentDate} onChange={(event) => setAppointmentDate(event.target.value)} /></label>}
+            <div className="view-toggle"><button type="button" className={!calendarMode ? 'active' : ''} onClick={() => setCalendarMode(false)}>List</button><button type="button" className={calendarMode ? 'active' : ''} onClick={() => setCalendarMode(true)}>Calendar</button></div>
+          </>}
+          <span className="record-count">{config.endpoint === '/api/appointments' && !calendarMode ? listRows.length : filteredRows.length} records</span>
+        </div>
+        {loading ? <div className="loading-state">Loading records…</div> : calendarMode && config.endpoint === '/api/appointments'
+          ? <AppointmentCalendar appointments={filteredRows} month={calendarMonth} onMonthChange={setCalendarMonth} onSelect={openEdit} />
+          : (
           <div className="table-wrap"><table className="data-table"><thead><tr>{config.columns.map(([key, label]) => <th key={key}>{label}</th>)}<th>Actions</th></tr></thead><tbody>
-            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + 1}>{error ? 'Records could not be loaded.' : query ? 'No matching records.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(row[key], key)}</td>)}<td><div className="row-actions">{config.endpoint === '/api/patients' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}<button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button><button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button></div></td></tr>)}
+            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + 1}>{error ? 'Records could not be loaded.' : query || appointmentDate || Object.values(filterValues).some(Boolean) ? 'No records match the current filters.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(row[key], key)}</td>)}<td><div className="row-actions">{config.endpoint === '/api/patients' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}<button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button><button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button></div></td></tr>)}
           </tbody></table></div>
         )}
-        {filteredRows.length > pageSize && <div className="pagination"><span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredRows.length)} of {filteredRows.length}</span><div><button className="small-button" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>Previous</button><span>{currentPage} / {pageCount}</span><button className="small-button" type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => page + 1)}>Next</button></div></div>}
+        {!calendarMode && listRows.length > pageSize && <div className="pagination"><span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, listRows.length)} of {listRows.length}</span><div><button className="small-button" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>Previous</button><span>{currentPage} / {pageCount}</span><button className="small-button" type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => page + 1)}>Next</button></div></div>}
       </section>
       {viewing && config.endpoint === '/api/patients' && <Modal title={viewing.name || 'Patient profile'} description="Patient profile and clinical details." onClose={() => setViewing(null)} wide>
         <dl className="detail-grid">{config.fields.filter((field) => field.type !== 'checkbox').map((field) => <div key={field.name}><dt>{field.label}</dt><dd>{displayValue(viewing[field.name], field.name)}</dd></div>)}</dl>
@@ -252,11 +367,12 @@ export default function ResourcePage({ config }) {
         <form className="form-grid" onSubmit={submit}>
           {config.fields.map((field) => <label key={field.name} className={`form-field ${field.type === 'textarea' ? 'full' : ''}`}>
             <span>{field.label}</span>
-            {field.type === 'select' ? <select className="form-control" value={form[field.name] ?? ''} required={field.required} onChange={(event) => updateField(field.name, event.target.value, field.type)}>{field.options.map((option) => <option key={option || 'empty'} value={option}>{option || 'Not specified'}</option>)}</select>
+            {field.type === 'select' ? <select className="form-control" value={form[field.name] ?? ''} required={field.required} onChange={(event) => updateSelectField(field, event.target.value)}><option value="">Select {field.label.toLowerCase()}</option>{fieldOptions(field).map((option) => <option key={option.value || 'empty'} value={option.value}>{option.label}</option>)}{form[field.name] && !fieldOptions(field).some((option) => option.value === form[field.name]) && <option value={form[field.name]}>{form[field.name]} (existing)</option>}</select>
               : field.type === 'textarea' ? <textarea className="form-control" rows="3" value={form[field.name] ?? ''} required={field.required} onChange={(event) => updateField(field.name, event.target.value, field.type)} />
                 : field.type === 'checkbox' ? <input type="checkbox" checked={Boolean(form[field.name])} onChange={(event) => updateField(field.name, event.target.checked, field.type)} />
-                  : <input className="form-control" type={field.type} min={field.type === 'number' ? '0' : undefined} step={field.name.toLowerCase().includes('price') || field.name.toLowerCase().includes('charge') || field.name === 'paidAmount' ? '0.01' : undefined} value={form[field.name] ?? ''} required={field.required} readOnly={field.name === 'invoiceNumber' && Boolean(editing)} onChange={(event) => updateField(field.name, event.target.value, field.type)} />}
+                  : <input className="form-control" type={field.type} min={field.type === 'number' ? '0' : undefined} step={field.name.toLowerCase().includes('price') || field.name.toLowerCase().includes('charge') || field.name === 'paidAmount' ? '0.01' : undefined} value={form[field.name] ?? ''} required={field.required} readOnly={field.readOnly || (field.name === 'invoiceNumber' && Boolean(editing))} onChange={(event) => updateField(field.name, event.target.value, field.type)} />}
           </label>)}
+          {lookupError && <div className="notice error full" role="alert">{lookupError}</div>}
           {config.endpoint === '/api/bills' && <div className="form-total full">Invoice total <strong>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(['consultationCharges', 'medicineCharges', 'laboratoryCharges', 'otherCharges'].reduce((sum, key) => sum + Number(form[key] || 0), 0))}</strong></div>}
           {error && <div className="notice error full" role="alert">{error}</div>}
           <div className="form-actions full"><button type="button" className="secondary-button" onClick={() => setDialogOpen(false)}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : editing ? 'Save changes' : `Create ${config.singular}`}</button></div>

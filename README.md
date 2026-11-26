@@ -21,26 +21,11 @@ A MERN-based Hospital Management System for patient, staff, appointment, billing
 
 Billing supports itemized invoices, recorded payment methods, searchable billing history, and printable invoices. Pharmacy inventory uses live database records for stock and expiry metrics and supports create, edit, and delete operations. Laboratory totals are derived from persisted test requests; daily billing revenue is based only on bills with a recorded payment date.
 
-### 🩺 Doctor Module
+Appointments can be scheduled from existing patient and available-doctor records, filtered by status/date, and viewed in a calendar. The dashboard compares recent patient/appointment activity and daily revenue against the preceding period using saved database records; its activity feed reflects record update timestamps.
 
-* Doctor Login
-* View Assigned Patients
-* Manage Appointments
-* Update Patient Diagnosis
-* Prescribe Medicines
-* View Medical History
+### Current implementation boundaries
 
-### 🧪 Laboratory Module
-
-* Manage Lab Tests
-* Upload Test Reports
-* View Patient Test History
-
-### 💊 Pharmacy Module
-
-* Medicine Inventory
-* Medicine Stock Management
-* Prescription Verification
+The current system authenticates users and displays their role, but does not yet enforce a role-to-module permission matrix. Department management, standalone medical records, notifications, user administration, payment-gateway processing, file uploads for lab reports, and per-bed patient allocation do not have corresponding existing APIs/data models and are not represented as working modules. Room availability is calculated from room capacity and status.
 
 ## Technologies
 

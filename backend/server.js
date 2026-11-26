@@ -315,18 +315,30 @@ app.get('/api/auth/me', async (req, res) => {
 
 app.get('/api/dashboard/overview', async (req, res) => {
   try {
-    const [patients, appointments, bills, rooms, labTests, staff, emergencyCases] = await Promise.all([
+    const [patients, appointments, bills, rooms, labTests, staff, emergencyCases, medicines] = await Promise.all([
       Patient.find().sort({ createdAt: -1 }).lean(),
       Appointment.find().sort({ date: 1, time: 1 }).lean(),
       Bill.find().sort({ createdAt: -1 }).lean(),
       Room.find().lean(),
       LabTest.find().lean(),
       Staff.find().sort({ createdAt: -1 }).lean(),
-      EmergencyCase.find().sort({ createdAt: -1 }).lean()
+      EmergencyCase.find().sort({ createdAt: -1 }).lean(),
+      Medicine.find().sort({ updatedAt: -1 }).lean()
     ]);
 
     const today = new Date();
     const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const currentPeriodStart = new Date(todayStart);
+    currentPeriodStart.setDate(currentPeriodStart.getDate() - 29);
+    const previousPeriodStart = new Date(currentPeriodStart);
+    previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
+    const toDateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const currentPeriodStartKey = toDateKey(currentPeriodStart);
+    const previousPeriodStartKey = toDateKey(previousPeriodStart);
+    const yesterdayKey = toDateKey(yesterdayStart);
     const doctorRecords = staff.filter((member) => /doctor|consultant|physician/i.test(member.role || ''));
     const pendingAppointments = appointments.filter((appointment) => /^(pending|scheduled)$/i.test(appointment.status || ''));
     const months = Array.from({ length: 6 }, (_, index) => {
@@ -374,6 +386,35 @@ app.get('/api/dashboard/overview', async (req, res) => {
     const todaysRevenue = bills.reduce((total, bill) => (
       bill.paymentDate === todayKey ? total + Number(bill.paidAmount || 0) : total
     ), 0);
+    const yesterdaysRevenue = bills.reduce((total, bill) => (
+      bill.paymentDate === yesterdayKey ? total + Number(bill.paidAmount || 0) : total
+    ), 0);
+    const patientsInPeriod = patients.filter((patient) => {
+      const createdAt = patient.createdAt && new Date(patient.createdAt);
+      return createdAt && createdAt >= currentPeriodStart && createdAt < new Date(todayStart.getTime() + 86400000);
+    }).length;
+    const patientsInPreviousPeriod = patients.filter((patient) => {
+      const createdAt = patient.createdAt && new Date(patient.createdAt);
+      return createdAt && createdAt >= previousPeriodStart && createdAt < currentPeriodStart;
+    }).length;
+    const appointmentsInPeriod = appointments.filter((appointment) => (
+      appointment.date >= currentPeriodStartKey && appointment.date <= todayKey
+    )).length;
+    const appointmentsInPreviousPeriod = appointments.filter((appointment) => (
+      appointment.date >= previousPeriodStartKey && appointment.date < currentPeriodStartKey
+    )).length;
+    const recentActivities = [
+      ...patients.map((item) => ({ id: item._id, type: 'Patient', title: item.name, updatedAt: item.updatedAt || item.createdAt })),
+      ...appointments.map((item) => ({ id: item._id, type: 'Appointment', title: `${item.patientName} · ${item.doctorName}`, updatedAt: item.updatedAt || item.createdAt })),
+      ...bills.map((item) => ({ id: item._id, type: 'Billing', title: item.invoiceNumber || item.patientName, updatedAt: item.updatedAt || item.createdAt })),
+      ...rooms.map((item) => ({ id: item._id, type: 'Room', title: item.roomNumber, updatedAt: item.updatedAt || item.createdAt })),
+      ...labTests.map((item) => ({ id: item._id, type: 'Laboratory', title: `${item.testName} · ${item.patientName}`, updatedAt: item.updatedAt || item.createdAt })),
+      ...staff.map((item) => ({ id: item._id, type: 'Staff', title: item.name, updatedAt: item.updatedAt || item.createdAt })),
+      ...emergencyCases.map((item) => ({ id: item._id, type: 'Emergency', title: `${item.patientName} · ${item.emergencyType}`, updatedAt: item.updatedAt || item.createdAt })),
+      ...medicines.map((item) => ({ id: item._id, type: 'Pharmacy', title: item.name, updatedAt: item.updatedAt || item.createdAt }))
+    ].filter((item) => item.title && item.updatedAt && !Number.isNaN(new Date(item.updatedAt).getTime()))
+      .sort((left, right) => new Date(right.updatedAt) - new Date(left.updatedAt))
+      .slice(0, 8);
 
     res.json({
       stats: {
@@ -385,11 +426,19 @@ app.get('/api/dashboard/overview', async (req, res) => {
         todaysRevenue,
         pendingAppointments: pendingAppointments.length,
         emergencyCases: emergencyCases.filter((item) => item.status === 'Active').length,
-        paidTotal
+        paidTotal,
+        trends: {
+          patientsAdded30d: patientsInPeriod,
+          patientsAdded30dChange: patientsInPeriod - patientsInPreviousPeriod,
+          appointments30d: appointmentsInPeriod,
+          appointments30dChange: appointmentsInPeriod - appointmentsInPreviousPeriod,
+          todaysRevenueChange: todaysRevenue - yesterdaysRevenue
+        }
       },
       recentPatients: patients.slice(0, 5),
       todaysAppointments: appointments.filter((appointment) => appointment.date === todayKey).slice(0, 6),
       recentTransactions: bills.slice(0, 5),
+      recentActivities,
       recentEmergencyCases: emergencyCases.filter((item) => item.status === 'Active').slice(0, 5),
       doctors: doctorRecords.slice(0, 5).map((doctor) => ({
         name: doctor.name,
