@@ -39,6 +39,21 @@ const appointmentSchema = new mongoose.Schema({
   status: { type: String, default: 'Scheduled' }
 }, { timestamps: true });
 
+const billPaymentSchema = new mongoose.Schema({
+  receiptNumber: { type: String, required: true },
+  amount: { type: Number, required: true, min: 0.01 },
+  method: { type: String, required: true },
+  paymentDate: { type: String, required: true },
+  reference: { type: String, default: '' },
+  recordedBy: { type: String, default: '' },
+  requestId: { type: String, default: '' },
+  provider: { type: String, enum: ['manual', 'razorpay'], default: 'manual' },
+  status: { type: String, enum: ['Pending', 'Paid', 'Failed'], default: 'Paid' },
+  orderId: { type: String, default: '' },
+  paymentId: { type: String, default: '' },
+  expiresAt: Date
+}, { timestamps: true });
+
 const billSchema = new mongoose.Schema({
   patientName: { type: String, required: true },
   contact: String,
@@ -53,8 +68,13 @@ const billSchema = new mongoose.Schema({
   paymentMethod: String,
   paymentDate: String,
   status: { type: String, default: 'Pending' },
-  dueDate: String
-}, { timestamps: true });
+  dueDate: String,
+  legacyPaidAmount: { type: Number, min: 0 },
+  legacyPaymentDate: String,
+  legacyPaymentMethod: String,
+  legacyPaymentCaptured: { type: Boolean, default: false },
+  payments: { type: [billPaymentSchema], default: [] }
+}, { timestamps: true, optimisticConcurrency: true });
 
 const medicineSchema = new mongoose.Schema({
   name: { type: String, required: true },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Eye, Plus, Printer, Search } from 'lucide-react';
+import { CreditCard, Eye, Plus, Printer, Search } from 'lucide-react';
 import { api } from '../api.js';
 import Modal from '../components/Modal.jsx';
 import AppointmentCalendar from '../components/AppointmentCalendar.jsx';
@@ -7,9 +7,29 @@ import { canAccessRole, normalizeRole } from '../permissions.js';
 import { useAuth } from '../auth.jsx';
 
 const fields = (...items) => items.map(([name, label, type = 'text', options = null, required = false, source = null, readOnly = false]) => ({ name, label, type, options, required, source, readOnly }));
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
 const isDoctor = (row) => /doctor|consultant|physician/i.test(row.role || '');
 const isBookableDoctor = (row) => isDoctor(row) && !/^(unavailable|on leave)$/i.test(row.availability || '');
+const billBalance = (bill) => Math.max(0, Number(bill.amount || 0) - Number(bill.paidAmount || 0));
+const billPaymentStatus = (bill) => billBalance(bill) <= 0
+  ? 'Paid'
+  : Number(bill.paidAmount || 0) > 0 ? 'Partially paid' : 'Pending';
+const billLegacyPaid = (bill) => bill.legacyPaymentCaptured
+  ? Number(bill.legacyPaidAmount || 0)
+  : Math.max(0, Number(bill.paidAmount || 0) - (bill.payments || []).filter((payment) => payment.status === 'Paid').reduce((total, payment) => total + Number(payment.amount || 0), 0));
+const localDateKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+function loadRazorpayCheckout() {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => window.Razorpay ? resolve() : reject(new Error('Secure checkout could not be loaded.'));
+    script.onerror = () => reject(new Error('Secure checkout is unavailable. Check your connection and retry.'));
+    document.head.appendChild(script);
+  });
+}
 
 export const pageConfigs = {
   patients: {
@@ -144,11 +164,11 @@ export const pageConfigs = {
   },
   billing: {
     title: 'Billing & payments', subtitle: 'Generate invoices and track recorded payments.', endpoint: '/api/bills', module: 'billing', singular: 'bill',
-    fields: fields(['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['contact', 'Contact', 'tel'], ['email', 'Email', 'email'], ['invoiceNumber', 'Invoice number', 'text', null, true], ['consultationCharges', 'Consultation charges', 'number'], ['medicineCharges', 'Medicine charges', 'number'], ['laboratoryCharges', 'Laboratory charges', 'number'], ['otherCharges', 'Other charges', 'number'], ['paidAmount', 'Amount paid', 'number'], ['paymentMethod', 'Payment method', 'select', ['', 'Cash', 'Card', 'Bank transfer', 'Online']], ['paymentDate', 'Payment date', 'date'], ['dueDate', 'Due date', 'date'], ['status', 'Payment status', 'select', ['Pending', 'Paid', 'Failed']]),
-    columns: [['invoiceNumber', 'Invoice'], ['patientName', 'Patient'], ['amount', 'Total'], ['paidAmount', 'Paid'], ['paymentMethod', 'Method'], ['status', 'Status'], ['dueDate', 'Due']],
+    fields: fields(['patientName', 'Patient', 'select', null, true, { endpoint: '/api/patients', value: 'name', label: (patient) => `${patient.name} · ${patient._id.slice(-5)}` }], ['contact', 'Contact', 'tel'], ['email', 'Email', 'email'], ['invoiceNumber', 'Invoice number', 'text', null, true], ['consultationCharges', 'Consultation charges', 'number'], ['medicineCharges', 'Medicine charges', 'number'], ['laboratoryCharges', 'Laboratory charges', 'number'], ['otherCharges', 'Other charges', 'number'], ['dueDate', 'Due date', 'date']),
+    columns: [['invoiceNumber', 'Invoice'], ['patientName', 'Patient'], ['amount', 'Total'], ['paidAmount', 'Paid'], ['balanceDue', 'Balance due'], ['paymentMethod', 'Method'], ['status', 'Status'], ['dueDate', 'Due']],
     summary: (items) => [
       ['Total invoices', items.length],
-      ['Pending', items.filter((item) => item.status !== 'Paid').length],
+      ['Outstanding', items.filter((item) => billBalance(item) > 0).length],
       ['Recorded payments', money(items.reduce((total, item) => total + Number(item.paidAmount || 0), 0))]
     ]
   },
@@ -167,7 +187,7 @@ export const pageConfigs = {
 
 function displayValue(value, field) {
   if (field === 'sampleCollected' || field === 'reportReady') return value ? 'Yes' : 'No';
-  if (field === 'amount' || field === 'paidAmount' || field === 'price') return value === undefined ? '—' : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(value || 0));
+  if (field === 'amount' || field === 'paidAmount' || field === 'balanceDue' || field === 'price') return value === undefined ? '—' : money(Number(value || 0));
   return value === undefined || value === null || value === '' ? '—' : String(value);
 }
 
@@ -186,6 +206,12 @@ export default function ResourcePage({ config }) {
   const [form, setForm] = useState({});
   const [lookupData, setLookupData] = useState({});
   const [saving, setSaving] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState(null);
+  const [paymentConfigError, setPaymentConfigError] = useState('');
+  const [paymentBill, setPaymentBill] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({});
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentBusy, setPaymentBusy] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterValues, setFilterValues] = useState({});
   const [appointmentDate, setAppointmentDate] = useState('');
@@ -203,6 +229,15 @@ export default function ResourcePage({ config }) {
         .filter((endpoint) => canAccessRole(user?.role, lookupModules[endpoint], 'read'));
       const results = await api(config.endpoint);
       if (!Array.isArray(results)) throw new Error(`The server returned invalid ${config.singular} records.`);
+      if (config.endpoint === '/api/bills') {
+        try {
+          setPaymentConfig(await api('/api/billing/payment-config'));
+          setPaymentConfigError('');
+        } catch (configError) {
+          setPaymentConfig(null);
+          setPaymentConfigError(`Online payment availability could not be checked: ${configError.message}`);
+        }
+      }
       const auxiliaryResults = await Promise.allSettled([
         ...(config.relatedEndpoint ? [api(config.relatedEndpoint)] : []),
         ...lookupEndpoints.map((endpoint) => api(endpoint))
@@ -276,7 +311,8 @@ export default function ResourcePage({ config }) {
   const isEditingProtectedUser = config.endpoint === '/api/users' && editing
     && (editing.username === user?.username || isLastActiveAdministrator(editing));
   const canDeleteRow = (row) => can('delete') && config.endpoint !== '/api/beds'
-    && !(config.endpoint === '/api/users' && (row.username === user?.username || isLastActiveAdministrator(row)));
+    && !(config.endpoint === '/api/users' && (row.username === user?.username || isLastActiveAdministrator(row)))
+    && !(config.endpoint === '/api/bills' && (Number(row.paidAmount || 0) > 0 || row.payments?.length));
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, pageCount));
@@ -301,6 +337,96 @@ export default function ResourcePage({ config }) {
     setForm({ ...row });
     setError('');
     setDialogOpen(true);
+  }
+
+  function openPayment(row) {
+    setPaymentBill(row);
+    setPaymentError('');
+    setPaymentForm({
+      amount: billBalance(row).toFixed(2),
+      method: 'Cash',
+      paymentDate: localDateKey(),
+      reference: '',
+      requestId: window.crypto.randomUUID(),
+      razorpayRequestId: window.crypto.randomUUID()
+    });
+  }
+
+  function applyUpdatedBill(updatedBill) {
+    setRows((current) => current.map((row) => row._id === updatedBill._id ? updatedBill : row));
+    setViewing((current) => current?._id === updatedBill._id ? updatedBill : current);
+    setPaymentBill(null);
+    setPaymentError('');
+  }
+
+  async function recordPayment(event) {
+    event.preventDefault();
+    if (!paymentBill) return;
+    setPaymentBusy(true);
+    setPaymentError('');
+    try {
+      const updatedBill = await api(`/api/bills/${encodeURIComponent(paymentBill._id)}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Number(paymentForm.amount),
+          method: paymentForm.method,
+          paymentDate: paymentForm.paymentDate,
+          reference: paymentForm.reference,
+          requestId: paymentForm.requestId
+        })
+      });
+      const receipt = updatedBill.payments?.find((payment) => payment.requestId === paymentForm.requestId)?.receiptNumber;
+      applyUpdatedBill(updatedBill);
+      setNotice(`Payment recorded${receipt ? ` · receipt ${receipt}` : ''}.`);
+    } catch (requestError) {
+      setPaymentError(requestError.message);
+    } finally {
+      setPaymentBusy(false);
+    }
+  }
+
+  async function payOnline() {
+    if (!paymentBill) return;
+    setPaymentBusy(true);
+    setPaymentError('');
+    try {
+      await loadRazorpayCheckout();
+      const order = await api(`/api/bills/${encodeURIComponent(paymentBill._id)}/razorpay/order`, {
+        method: 'POST',
+        body: JSON.stringify({ requestId: paymentForm.razorpayRequestId })
+      });
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'MediCare',
+        description: `Invoice ${order.invoiceNumber}`,
+        order_id: order.orderId,
+        handler: async (response) => {
+          try {
+            const updatedBill = await api(`/api/bills/${encodeURIComponent(paymentBill._id)}/razorpay/verify`, {
+              method: 'POST',
+              body: JSON.stringify(response)
+            });
+            applyUpdatedBill(updatedBill);
+            setNotice('Online payment confirmed and invoice balance updated.');
+          } catch (requestError) {
+            setPaymentError(requestError.message);
+          } finally {
+            setPaymentBusy(false);
+          }
+        },
+        modal: { ondismiss: () => setPaymentBusy(false) }
+      });
+      checkout.on('payment.failed', (response) => {
+        setPaymentError(response.error?.description || 'Payment was not completed. You can retry online or use another payment method.');
+        setPaymentBusy(false);
+      });
+      checkout.open();
+    } catch (requestError) {
+      setPaymentError(requestError.message);
+      setPaymentBusy(false);
+    }
   }
 
   function updateField(name, value, type) {
@@ -355,9 +481,7 @@ export default function ResourcePage({ config }) {
         const chargeKeys = ['consultationCharges', 'medicineCharges', 'laboratoryCharges', 'otherCharges'];
         const itemizedAmount = chargeKeys.reduce((sum, key) => sum + Number(payload[key] || 0), 0);
         payload.amount = itemizedAmount || editing?.amount || 0;
-        if (Number(payload.paidAmount || 0) > payload.amount) {
-          throw new Error('Amount paid cannot exceed the invoice total.');
-        }
+        ['paidAmount', 'paymentMethod', 'paymentDate', 'status', 'payments'].forEach((field) => delete payload[field]);
         if (!editing) payload.invoiceNumber = payload.invoiceNumber || `INV-${Date.now()}`;
       }
       if (config.endpoint === '/api/users' && editing && !payload.password) delete payload.password;
@@ -395,6 +519,8 @@ export default function ResourcePage({ config }) {
       <div className="page-heading"><div><span className="eyebrow">OPERATIONS</span><h1>{config.title}</h1><p>{config.subtitle}</p></div>{canCreate && <button className="primary-button" type="button" onClick={openCreate}><Plus size={16} />Add {config.singular}</button>}</div>
       {notice && <div className="notice success" role="status">{notice}<button className="notice-dismiss" onClick={() => setNotice('')} aria-label="Dismiss">×</button></div>}
       {error && !dialogOpen && <div className="notice error" role="alert">{error}<button className="notice-dismiss" onClick={() => setError('')} aria-label="Dismiss">×</button></div>}
+      {config.endpoint === '/api/bills' && paymentConfigError && <div className="notice error" role="alert">{paymentConfigError}</div>}
+      {config.endpoint === '/api/bills' && paymentConfig && !paymentConfig.razorpayEnabled && <div className="notice" role="status">Online payments are not configured. Staff can still record cash, card, bank transfer, cheque, or insurance payments.</div>}
       {lookupError && !dialogOpen && <div className="notice error" role="alert">{lookupError}</div>}
       {config.summary && !loading && !error && <section className="summary-grid">{config.summary(config.filter ? rows.filter(config.filter) : rows).map(([label, value]) => <article className="summary-card" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>}
       <section className="table-panel">
@@ -411,7 +537,7 @@ export default function ResourcePage({ config }) {
           ? <AppointmentCalendar appointments={filteredRows} month={calendarMonth} onMonthChange={setCalendarMonth} onSelect={can('update') ? openEdit : setViewing} />
           : (
           <div className="table-wrap"><table className="data-table"><thead><tr>{config.columns.map(([key, label]) => <th key={key}>{label}</th>)}{showActions && <th>Actions</th>}</tr></thead><tbody>
-            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + Number(showActions)}>{error ? 'Records could not be loaded.' : query || appointmentDate || Object.values(filterValues).some(Boolean) ? 'No records match the current filters.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(row[key], key)}</td>)}{showActions && <td><div className="row-actions">{['/api/patients', '/api/appointments', '/api/lab-tests', '/api/medical-records'].includes(config.endpoint) && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}{can('update') && <button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button>}{canDeleteRow(row) && <button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button>}</div></td>}</tr>)}
+            {!visibleRows.length ? <tr><td className="empty-row" colSpan={config.columns.length + Number(showActions)}>{error ? 'Records could not be loaded.' : query || appointmentDate || Object.values(filterValues).some(Boolean) ? 'No records match the current filters.' : `No ${config.singular} records yet.`}</td></tr> : visibleRows.map((row) => <tr key={row._id}>{config.columns.map(([key]) => <td key={key}>{displayValue(config.endpoint === '/api/bills' && key === 'balanceDue' ? billBalance(row) : config.endpoint === '/api/bills' && key === 'status' ? billPaymentStatus(row) : row[key], key)}</td>)}{showActions && <td><div className="row-actions">{['/api/patients', '/api/appointments', '/api/lab-tests', '/api/medical-records'].includes(config.endpoint) && <button className="small-button" type="button" onClick={() => setViewing(row)}><Eye size={13} />View</button>}{config.endpoint === '/api/bills' && billBalance(row) > 0 && can('update') && <button className="small-button" type="button" onClick={() => openPayment(row)}><CreditCard size={13} />Collect payment</button>}{config.endpoint === '/api/bills' && <button className="small-button" type="button" onClick={() => setViewing(row)}><Printer size={13} />Invoice</button>}{can('update') && <button className="small-button" type="button" onClick={() => openEdit(row)}>Edit</button>}{canDeleteRow(row) && <button className="danger-button small-danger" type="button" onClick={() => remove(row)}>Delete</button>}</div></td>}</tr>)}
           </tbody></table></div>
         )}
         {!calendarMode && listRows.length > pageSize && <div className="pagination"><span>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, listRows.length)} of {listRows.length}</span><div><button className="small-button" type="button" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>Previous</button><span>{currentPage} / {pageCount}</span><button className="small-button" type="button" disabled={currentPage === pageCount} onClick={() => setCurrentPage((page) => page + 1)}>Next</button></div></div>}
@@ -425,7 +551,7 @@ export default function ResourcePage({ config }) {
       {viewing && ['/api/appointments', '/api/lab-tests'].includes(config.endpoint) && <Modal title={config.endpoint === '/api/appointments' ? 'Appointment details' : 'Laboratory record'} description="Saved record details." onClose={() => setViewing(null)} wide>
         <dl className="detail-grid">{config.fields.filter((field) => field.type !== 'checkbox').map((field) => <div key={field.name}><dt>{field.label}</dt><dd>{displayValue(viewing[field.name], field.name)}</dd></div>)}</dl>
       </Modal>}
-      {viewing && config.endpoint === '/api/bills' && <Modal title={`Invoice ${viewing.invoiceNumber}`} description="Recorded billing information." onClose={() => setViewing(null)}>
+      {viewing && config.endpoint === '/api/bills' && <Modal title={`Invoice ${viewing.invoiceNumber}`} description="Invoice totals and verified payment history." onClose={() => setViewing(null)} wide>
         <div className="invoice-preview">
           <div className="invoice-brand"><strong>MediCare</strong><span>Hospital invoice</span></div>
           <div className="invoice-line"><span>Patient</span><strong>{viewing.patientName}</strong></div>
@@ -435,9 +561,37 @@ export default function ResourcePage({ config }) {
           <div className="invoice-line"><span>Laboratory</span><strong>{displayValue(viewing.laboratoryCharges, 'amount')}</strong></div>
           <div className="invoice-line"><span>Other charges</span><strong>{displayValue(viewing.otherCharges, 'amount')}</strong></div>
           <div className="invoice-line invoice-total"><span>Total</span><strong>{displayValue(viewing.amount, 'amount')}</strong></div>
-          <div className="invoice-line"><span>Payment status</span><strong>{viewing.status}</strong></div>
+          <div className="invoice-line"><span>Paid</span><strong>{displayValue(viewing.paidAmount, 'paidAmount')}</strong></div>
+          <div className="invoice-line"><span>Balance due</span><strong>{displayValue(billBalance(viewing), 'balanceDue')}</strong></div>
+          <div className="invoice-line"><span>Payment status</span><strong>{billPaymentStatus(viewing)}</strong></div>
+          <div className="invoice-line"><span>Due date</span><strong>{viewing.dueDate || '—'}</strong></div>
         </div>
-        <div className="form-actions"><button className="primary-button" type="button" onClick={() => window.print()}><Printer size={15} />Print invoice</button></div>
+        <section className="payment-history">
+          <h3>Payment history</h3>
+          {viewing.payments?.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Receipt</th><th>Date</th><th>Method</th><th>Reference</th><th>Status</th><th>Amount</th></tr></thead><tbody>
+            {viewing.payments.map((payment) => <tr key={payment._id || payment.receiptNumber}><td>{payment.receiptNumber}</td><td>{payment.paymentDate || '—'}</td><td>{payment.method}</td><td>{payment.reference || payment.orderId || '—'}</td><td>{payment.status}</td><td>{displayValue(payment.amount, 'amount')}</td></tr>)}
+          </tbody></table></div> : billLegacyPaid(viewing) <= 0 && <p className="empty-payment-history">No payments have been recorded for this invoice.</p>}
+          {billLegacyPaid(viewing) > 0 && <p className="empty-payment-history">Previously recorded balance: {displayValue(billLegacyPaid(viewing), 'paidAmount')}{viewing.legacyPaymentDate || viewing.paymentDate ? ` · ${viewing.legacyPaymentDate || viewing.paymentDate}` : ''}{viewing.legacyPaymentMethod ? ` · ${viewing.legacyPaymentMethod}` : ''}. Detailed receipt records were not available before payment tracking was enabled.</p>}
+        </section>
+        <div className="form-actions">
+          {can('update') && billBalance(viewing) > 0 && <button className="secondary-button" type="button" onClick={() => { setViewing(null); openPayment(viewing); }}><CreditCard size={15} />Collect payment</button>}
+          <button className="primary-button" type="button" onClick={() => window.print()}><Printer size={15} />Print invoice</button>
+        </div>
+      </Modal>}
+      {paymentBill && <Modal title={`Collect payment · ${paymentBill.invoiceNumber}`} description={`Outstanding balance ${money(billBalance(paymentBill))}. Receipts are saved to this invoice.`} onClose={() => !paymentBusy && setPaymentBill(null)} wide>
+        <form className="form-grid" onSubmit={recordPayment}>
+          <label className="form-field"><span>Payment amount</span><input className="form-control" type="number" min="0.01" max={billBalance(paymentBill).toFixed(2)} step="0.01" required value={paymentForm.amount ?? ''} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} /></label>
+          <label className="form-field"><span>Payment method</span><select className="form-control" required value={paymentForm.method ?? ''} onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value }))}><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Cheque</option><option>Insurance</option></select></label>
+          <label className="form-field"><span>Payment date</span><input className="form-control" type="date" required value={paymentForm.paymentDate ?? ''} onChange={(event) => setPaymentForm((current) => ({ ...current, paymentDate: event.target.value }))} /></label>
+          <label className="form-field"><span>Reference (optional)</span><input className="form-control" type="text" maxLength="100" placeholder="Transaction or cheque reference" value={paymentForm.reference ?? ''} onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))} /></label>
+          {paymentConfig?.razorpayEnabled && <div className="notice full">Online payments open Razorpay’s secure checkout. Card and bank details are handled by Razorpay, not stored by this application.</div>}
+          {paymentError && <div className="notice error full" role="alert">{paymentError}</div>}
+          <div className="form-actions full">
+            <button type="button" className="secondary-button" disabled={paymentBusy} onClick={() => setPaymentBill(null)}>Cancel</button>
+            {paymentConfig?.razorpayEnabled && <button type="button" className="secondary-button" disabled={paymentBusy} onClick={payOnline}>{paymentBusy ? 'Opening checkout…' : 'Pay online'}</button>}
+            <button className="primary-button" disabled={paymentBusy}>{paymentBusy ? 'Recording…' : 'Record payment'}</button>
+          </div>
+        </form>
       </Modal>}
       {dialogOpen && <Modal title={`${editing ? 'Edit' : 'Add'} ${config.singular}`} description="Changes are saved to the hospital database." onClose={() => setDialogOpen(false)} wide>
         <form className="form-grid" onSubmit={submit}>

@@ -21,7 +21,7 @@ A MERN-based Hospital Management System for patient, staff, appointment, billing
 * Pharmacy Management
 * Reports & Analytics
 
-Billing supports itemized invoices, recorded payment methods, searchable billing history, and printable invoices. Pharmacy inventory uses live database records for stock and expiry metrics and supports create, edit, and delete operations. Laboratory totals are derived from persisted test requests; daily billing revenue is based only on bills with a recorded payment date.
+Billing supports itemized invoices, server-recorded partial/full payments, receipt history, outstanding balances, and printable invoices. Razorpay checkout is available when its server-side credentials are configured; checkout signatures and captured payment state are verified by the API, with an optional signed webhook for reconciliation. Pharmacy inventory uses live database records for stock and expiry metrics and supports create, edit, and delete operations. Laboratory totals are derived from persisted test requests; revenue reports use saved payment records and retain legacy bill totals.
 
 Appointments can be scheduled from existing patient and available-doctor records, filtered by status/date, and viewed in a calendar. The dashboard compares recent patient/appointment activity and daily revenue against the preceding period using saved database records; its activity feed reflects record update timestamps.
 
@@ -31,7 +31,7 @@ Role-based page and API permissions are enforced: administrators have full acces
 
 Room capacity generates individual bed slots, with legacy room-level assignments migrated to the first slot; nurses and administrators can manage bed allocations, while receptionists can read them. Occupied/reserved beds prevent room deletion, and occupied assignments cannot be duplicated. Administrators can manage departments and accounts/roles; clinical and reception roles can read department details. Department names cannot be changed while referenced and departments cannot be deleted while referenced by staff or appointments. Users can change their own password from Settings after verifying the current password. Passwords are stored as scrypt hashes, password/role/status changes revoke other active sessions, and at least one active administrator is required.
 
-Notifications, payment-gateway processing, and file uploads for lab reports are not yet integrated. Razorpay and SMTP credentials are required before those external integrations can be enabled; no placeholder transactions or notifications are generated.
+Notifications and file uploads for lab reports are not yet integrated. Razorpay checkout stays disabled until valid credentials are configured; no placeholder payments or notifications are generated.
 
 ## Technologies
 
@@ -46,6 +46,8 @@ Use Node.js 20.19 or newer.
 ## 🔐 Configuration and first run
 
 Copy `backend/.env.example` to `backend/.env` and set a unique `ADMIN_PASSWORD` before starting with a new database. The administrator account is created from `ADMIN_USERNAME` and `ADMIN_PASSWORD` only when the user collection is empty. Existing legacy plaintext passwords are upgraded to a salted scrypt hash after a successful login.
+
+To enable Razorpay, set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in `backend/.env` (use test-mode credentials first). For asynchronous payment reconciliation, configure a Razorpay webhook at `/webhooks/razorpay` for the `payment.captured` event and set its signing secret as `RAZORPAY_WEBHOOK_SECRET`. Never commit these credentials or send them in chat.
 
 Set a long, private `SESSION_SECRET` for deployments and keep `.env` out of source control. Demo patient and operational records are not created by default; set `SEED_DEMO_DATA=true` only when you explicitly want sample data in a non-production environment.
 
@@ -107,7 +109,6 @@ Add screenshots of:
 
 ## 🎯 Future Enhancements
 
-* Online Payment Gateway
 * Email Notifications
 * SMS Alerts
 

@@ -7,6 +7,15 @@ const dotenv = require('dotenv');
 const crypto = require('crypto');
 const { promisify } = require('util');
 const { normalizeRole, roleLabel, hasPermission } = require('./permissions');
+const {
+  billStatus,
+  billPaymentEntries,
+  createBillPayload,
+  toMinorUnits,
+  validBillingDate,
+  verifyRazorpayPaymentSignature,
+  verifyRazorpayWebhookSignature
+} = require('./billing');
 
 const projectRoot = path.resolve(__dirname, '..');
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -23,7 +32,11 @@ const scrypt = promisify(crypto.scrypt);
 const sessionDurationSeconds = 60 * 60 * 8;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buffer) => {
+    req.rawBody = Buffer.from(buffer);
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use('/assets', express.static(path.join(projectRoot, 'frontend', 'public', 'assets'), { dotfiles: 'deny', index: false }));
 
@@ -41,6 +54,141 @@ const {
   MedicalRecord,
   Bed
 } = require('./models');
+
+const razorpayKeyId = process.env.RAZORPAY_KEY_ID || '';
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
+const razorpayWebhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+const manualPaymentMethods = ['Cash', 'Card', 'Bank transfer', 'Cheque', 'Insurance'];
+const paymentOrderLifetimeMs = 30 * 60 * 1000;
+
+function isRazorpayConfigured() {
+  return Boolean(razorpayKeyId && razorpayKeySecret);
+}
+
+async function razorpayRequest(pathname, { method = 'GET', body } = {}) {
+  if (!isRazorpayConfigured()) {
+    const error = new Error('Online payments are not configured');
+    error.status = 503;
+    throw error;
+  }
+  const headers = {
+    Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64')}`,
+    Accept: 'application/json'
+  };
+  if (body) headers['Content-Type'] = 'application/json';
+  let response;
+  try {
+    response = await fetch(`https://api.razorpay.com/v1${pathname}`, {
+      method,
+      headers,
+      signal: AbortSignal.timeout(12000),
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+  } catch (error) {
+    console.error('Razorpay request could not be completed:', error.message);
+    const requestError = new Error('The payment provider did not respond. Please retry.');
+    requestError.status = 503;
+    throw requestError;
+  }
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    console.error('Razorpay request failed:', response.status, payload?.error?.code || 'provider_error');
+    const error = new Error('The payment provider could not complete the request. Please retry.');
+    error.status = response.status >= 500 ? 503 : 400;
+    throw error;
+  }
+  return payload;
+}
+
+function paymentReceiptNumber() {
+  return `RCT-${localDateKey().replace(/-/g, '')}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+}
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function expirePendingPaymentOrders(bill, now = new Date()) {
+  let changed = false;
+  bill.payments.forEach((payment) => {
+    if (payment.provider === 'razorpay' && payment.status === 'Pending' && payment.expiresAt && payment.expiresAt <= now) {
+      payment.status = 'Failed';
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function synchronizeBillPaymentSummary(bill) {
+  const paidPayments = bill.payments.filter((payment) => payment.status === 'Paid');
+  const ledgerPaidMinorUnits = paidPayments.reduce((total, payment) => total + (toMinorUnits(payment.amount) || 0), 0);
+  const paidMinorUnits = toMinorUnits(bill.paidAmount) || 0;
+  const legacyPaidMinorUnits = Math.max(0, paidMinorUnits - ledgerPaidMinorUnits);
+  if (legacyPaidMinorUnits && !bill.legacyPaymentCaptured) {
+    bill.legacyPaidAmount = legacyPaidMinorUnits / 100;
+    bill.legacyPaymentDate = validBillingDate(bill.paymentDate) ? bill.paymentDate : '';
+    bill.legacyPaymentMethod = bill.paymentMethod || '';
+    bill.legacyPaymentCaptured = true;
+  }
+  const methods = new Set(paidPayments.map((payment) => payment.method).filter(Boolean));
+  const legacyMethod = bill.legacyPaymentCaptured ? bill.legacyPaymentMethod : bill.paymentMethod;
+  const legacyDate = bill.legacyPaymentCaptured ? bill.legacyPaymentDate : bill.paymentDate;
+  if (legacyPaidMinorUnits && legacyMethod) methods.add(legacyMethod);
+  const dates = paidPayments.map((payment) => payment.paymentDate).filter(validBillingDate);
+  if (legacyPaidMinorUnits && validBillingDate(legacyDate)) dates.push(legacyDate);
+
+  bill.status = billStatus(toMinorUnits(bill.amount) || 0, paidMinorUnits);
+  if (methods.size) bill.paymentMethod = methods.size > 1 ? 'Multiple' : [...methods][0];
+  if (dates.length) bill.paymentDate = dates.sort().at(-1);
+}
+
+function paymentBalanceMinorUnits(bill) {
+  return Math.max(0, (toMinorUnits(bill.amount) || 0) - (toMinorUnits(bill.paidAmount) || 0));
+}
+
+async function applyCapturedPayment(billId, orderId, gatewayPayment) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const bill = await Bill.findById(billId);
+    if (!bill) return { error: 'Invoice not found', status: 404 };
+    const payment = bill.payments.find((entry) => entry.orderId === orderId);
+    if (!payment) return { error: 'Payment order is not linked to this invoice', status: 404 };
+    if (payment.status === 'Paid' && payment.paymentId === gatewayPayment.id) return { bill };
+    if (payment.status !== 'Pending') return { error: 'This payment order is no longer active', status: 409 };
+
+    const paymentMinorUnits = toMinorUnits(payment.amount);
+    const paidMinorUnits = toMinorUnits(bill.paidAmount) || 0;
+    const totalMinorUnits = toMinorUnits(bill.amount) || 0;
+    if (
+      !paymentMinorUnits
+      || Number(gatewayPayment.amount) !== paymentMinorUnits
+      || gatewayPayment.currency !== 'INR'
+      || gatewayPayment.status !== 'captured'
+      || gatewayPayment.order_id !== orderId
+    ) {
+      return { error: 'The captured payment does not match this invoice', status: 409 };
+    }
+    if (paidMinorUnits + paymentMinorUnits > totalMinorUnits) {
+      return { error: 'The captured payment exceeds the remaining invoice balance', status: 409 };
+    }
+
+    payment.status = 'Paid';
+    payment.paymentId = gatewayPayment.id;
+    payment.method = gatewayPayment.method ? `Razorpay · ${gatewayPayment.method}` : 'Razorpay';
+    payment.reference = gatewayPayment.id;
+    payment.paymentDate = Number.isFinite(Number(gatewayPayment.created_at))
+      ? localDateKey(new Date(Number(gatewayPayment.created_at) * 1000))
+      : localDateKey();
+    bill.paidAmount = (paidMinorUnits + paymentMinorUnits) / 100;
+    synchronizeBillPaymentSummary(bill);
+    try {
+      await bill.save();
+      return { bill };
+    } catch (error) {
+      if (error.name !== 'VersionError' || attempt === 1) throw error;
+    }
+  }
+  return { error: 'Payment could not be reconciled. Please contact billing support.', status: 409 };
+}
 
 async function connectDatabase() {
   try {
@@ -275,7 +423,7 @@ app.get('/api/dashboard/stats', requireAuthentication, requireMappedRole, requir
       Room.find()
     ]);
 
-    const pendingBills = bills.filter((bill) => bill.status !== 'Paid').length;
+    const pendingBills = bills.filter((bill) => paymentBalanceMinorUnits(bill) > 0).length;
     const lowStock = medicines.filter((medicine) => medicine.stock <= medicine.reorderLevel).length;
     const availableRooms = rooms.filter((room) => room.status === 'Available').length;
 
@@ -341,6 +489,36 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/logout', (req, res) => {
   clearSessionCookie(res);
   res.json({ message: 'Signed out successfully' });
+});
+
+app.post('/webhooks/razorpay', async (req, res) => {
+  const signature = req.get('x-razorpay-signature');
+  if (!razorpayWebhookSecret) return res.status(503).json({ message: 'Payment webhook is not configured' });
+  if (!verifyRazorpayWebhookSignature(req.rawBody, signature, razorpayWebhookSecret)) {
+    return res.status(400).json({ message: 'Invalid payment webhook signature' });
+  }
+  if (req.body?.event !== 'payment.captured') return res.json({ received: true });
+
+  const gatewayPayment = req.body?.payload?.payment?.entity;
+  if (!gatewayPayment?.id || !gatewayPayment?.order_id) {
+    return res.status(400).json({ message: 'Payment webhook payload is incomplete' });
+  }
+  try {
+    const bill = await Bill.findOne({ 'payments.orderId': gatewayPayment.order_id }).select('_id').lean();
+    if (!bill) {
+      console.error('Captured Razorpay payment is not linked to an invoice');
+      return res.status(500).json({ message: 'Payment could not be linked to an invoice' });
+    }
+    const result = await applyCapturedPayment(bill._id, gatewayPayment.order_id, gatewayPayment);
+    if (result.error) {
+      console.error('Captured Razorpay payment could not be reconciled:', result.error);
+      return res.status(result.status >= 500 ? result.status : 200).json({ received: true });
+    }
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Unable to reconcile Razorpay webhook:', error.message);
+    res.status(500).json({ message: 'Payment reconciliation failed' });
+  }
 });
 
 app.use('/api', requireAuthentication, requireMappedRole);
@@ -578,11 +756,10 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
       if (index !== undefined) months[index].patientAdmissions += 1;
     });
 
-    bills.forEach((bill) => {
-      if (!bill.paymentDate || !/^\d{4}-\d{2}-\d{2}$/.test(bill.paymentDate)) return;
-      const key = bill.paymentDate.slice(0, 7);
-      const index = monthIndex.get(key);
-      if (index !== undefined) months[index].paidAmount += Number(bill.paidAmount || 0);
+    const billPaymentEvents = bills.flatMap((bill) => billPaymentEntries(bill));
+    billPaymentEvents.forEach(({ date, amount }) => {
+      const index = monthIndex.get(date.slice(0, 7));
+      if (index !== undefined) months[index].paidAmount += amount;
     });
 
     const departmentTotals = new Map();
@@ -598,12 +775,12 @@ app.get('/api/dashboard/overview', requirePermission('dashboard', 'read'), async
     });
 
     const availableBeds = beds.filter((bed) => bed.status === 'Available').length;
-    const paidTotal = bills.reduce((total, bill) => total + Number(bill.paidAmount || 0), 0);
-    const todaysRevenue = bills.reduce((total, bill) => (
-      bill.paymentDate === todayKey ? total + Number(bill.paidAmount || 0) : total
+    const paidTotal = billPaymentEvents.reduce((total, payment) => total + payment.amount, 0);
+    const todaysRevenue = billPaymentEvents.reduce((total, payment) => (
+      payment.date === todayKey ? total + payment.amount : total
     ), 0);
-    const yesterdaysRevenue = bills.reduce((total, bill) => (
-      bill.paymentDate === yesterdayKey ? total + Number(bill.paidAmount || 0) : total
+    const yesterdaysRevenue = billPaymentEvents.reduce((total, payment) => (
+      payment.date === yesterdayKey ? total + payment.amount : total
     ), 0);
     const patientsInPeriod = patients.filter((patient) => {
       const createdAt = patient.createdAt && new Date(patient.createdAt);
@@ -756,10 +933,79 @@ app.get('/api/reports/summary', requirePermission('reports', 'read'), async (req
         } }
       ]),
       Bill.aggregate([
-        { $match: { paymentDate: { $gte: from, $lte: to } } },
+        { $project: {
+          paidAmount: 1,
+          paymentDate: 1,
+          legacyPaidAmount: 1,
+          legacyPaymentDate: 1,
+          legacyPaymentCaptured: 1,
+          paidPayments: {
+            $filter: {
+              input: { $ifNull: ['$payments', []] },
+              as: 'payment',
+              cond: { $eq: ['$$payment.status', 'Paid'] }
+            }
+          }
+        } },
+        { $set: {
+          legacyAmount: {
+            $cond: [
+              { $eq: ['$legacyPaymentCaptured', true] },
+              { $ifNull: ['$legacyPaidAmount', 0] },
+              {
+                $cond: [
+                  {
+                    $gt: [
+                      {
+                        $subtract: [
+                          { $ifNull: ['$paidAmount', 0] },
+                          { $sum: '$paidPayments.amount' }
+                        ]
+                      },
+                      0
+                    ]
+                  },
+                  {
+                    $subtract: [
+                      { $ifNull: ['$paidAmount', 0] },
+                      { $sum: '$paidPayments.amount' }
+                    ]
+                  },
+                  0
+                ]
+              }
+            ]
+          },
+          legacyDate: {
+            $cond: [
+              { $eq: ['$legacyPaymentCaptured', true] },
+              '$legacyPaymentDate',
+              '$paymentDate'
+            ]
+          }
+        } },
+        { $project: {
+          paymentEvents: {
+            $concatArrays: [
+              '$paidPayments',
+              {
+                $cond: [
+                  { $gt: ['$legacyAmount', 0] },
+                  [{ paymentDate: '$legacyDate', amount: '$legacyAmount' }],
+                  []
+                ]
+              }
+            ]
+          }
+        } },
+        { $unwind: '$paymentEvents' },
+        { $match: {
+          'paymentEvents.paymentDate': { $gte: from, $lte: to },
+          'paymentEvents.amount': { $gt: 0 }
+        } },
         { $group: {
-          _id: { $substrBytes: ['$paymentDate', 0, 7] },
-          paidAmount: { $sum: { $ifNull: ['$paidAmount', 0] } }
+          _id: { $substrBytes: ['$paymentEvents.paymentDate', 0, 7] },
+          paidAmount: { $sum: '$paymentEvents.amount' }
         } }
       ]),
       Appointment.aggregate([
@@ -976,6 +1222,254 @@ function requireResourcePermission(routeName, action) {
   };
 }
 
+function buildBillRoutes() {
+  app.get('/api/bills', requireResourcePermission('bills', 'read'), async (req, res) => {
+    try {
+      res.json(await Bill.find().sort({ createdAt: -1 }));
+    } catch (error) {
+      console.error('Unable to load invoices:', error.message);
+      res.status(500).json({ message: 'Unable to load invoices' });
+    }
+  });
+
+  app.get('/api/billing/payment-config', requirePermission('billing', 'read'), (req, res) => {
+    res.json({ razorpayEnabled: isRazorpayConfigured(), currency: 'INR' });
+  });
+
+  app.post('/api/bills', requireResourcePermission('bills', 'create'), async (req, res) => {
+    try {
+      const details = createBillPayload(req.body);
+      const bill = await Bill.create({
+        ...details,
+        paidAmount: 0,
+        paymentMethod: '',
+        paymentDate: '',
+        status: 'Pending',
+        payments: []
+      });
+      res.status(201).json(bill);
+    } catch (error) {
+      if (error.code === 11000) return res.status(409).json({ message: 'That invoice number is already in use' });
+      res.status(error.status || 400).json({ message: error.message });
+    }
+  });
+
+  app.put('/api/bills/:id', requireResourcePermission('bills', 'update'), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid invoice ID' });
+    try {
+      const bill = await Bill.findById(req.params.id);
+      if (!bill) return res.status(404).json({ message: 'Invoice not found' });
+      const details = createBillPayload(req.body, bill);
+      Object.assign(bill, details);
+      synchronizeBillPaymentSummary(bill);
+      await bill.save();
+      res.json(bill);
+    } catch (error) {
+      if (error.code === 11000) return res.status(409).json({ message: 'That invoice number is already in use' });
+      res.status(error.status || (error.name === 'VersionError' ? 409 : 400)).json({
+        message: error.name === 'VersionError' ? 'This invoice changed in another session. Refresh and retry.' : error.message
+      });
+    }
+  });
+
+  app.delete('/api/bills/:id', requireResourcePermission('bills', 'delete'), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid invoice ID' });
+    try {
+      const bill = await Bill.findById(req.params.id);
+      if (!bill) return res.status(404).json({ message: 'Invoice not found' });
+      if ((toMinorUnits(bill.paidAmount) || 0) > 0 || bill.payments.length) {
+        return res.status(409).json({ message: 'Invoices with payment history cannot be deleted' });
+      }
+      const deleted = await Bill.findOneAndDelete({
+        _id: bill._id,
+        __v: bill.__v,
+        paidAmount: { $lte: 0 },
+        $or: [{ payments: { $size: 0 } }, { payments: { $exists: false } }]
+      });
+      if (!deleted) {
+        const stillExists = await Bill.exists({ _id: bill._id });
+        return stillExists
+          ? res.status(409).json({ message: 'This invoice changed while it was being deleted. Refresh and retry.' })
+          : res.status(404).json({ message: 'Invoice not found' });
+      }
+      res.json({ message: 'Invoice deleted successfully' });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.post('/api/bills/:id/payments', requireResourcePermission('bills', 'update'), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid invoice ID' });
+    try {
+      const bill = await Bill.findById(req.params.id);
+      if (!bill) return res.status(404).json({ message: 'Invoice not found' });
+
+      const amountMinorUnits = toMinorUnits(req.body?.amount);
+      if (!amountMinorUnits) return res.status(400).json({ message: 'Enter a payment amount greater than zero with at most two decimal places' });
+      const method = manualPaymentMethods.find((value) => value.toLowerCase() === String(req.body?.method || '').trim().toLowerCase());
+      if (!method) return res.status(400).json({ message: 'Choose a supported recorded payment method' });
+      const requestId = String(req.body?.requestId || '').trim();
+      if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/i.test(requestId)) {
+        return res.status(400).json({ message: 'A valid payment request ID is required' });
+      }
+      const paymentDate = req.body?.paymentDate || localDateKey();
+      if (!validBillingDate(paymentDate)) return res.status(400).json({ message: 'Enter a valid payment date' });
+      const reference = typeof req.body?.reference === 'string' ? req.body.reference.trim() : '';
+      if (reference.length > 100) return res.status(400).json({ message: 'Payment reference must be 100 characters or fewer' });
+      const existingPayment = bill.payments.find((payment) => payment.requestId === requestId);
+      if (existingPayment) {
+        if (toMinorUnits(existingPayment.amount) !== amountMinorUnits || existingPayment.method !== method) {
+          return res.status(409).json({ message: 'This payment request ID was already used for a different payment' });
+        }
+        return res.json(bill);
+      }
+
+      expirePendingPaymentOrders(bill);
+      if (bill.payments.some((payment) => payment.provider === 'razorpay' && payment.status === 'Pending')) {
+        return res.status(409).json({ message: 'An online payment is still in progress for this invoice. Complete it or wait for the payment order to expire.' });
+      }
+      const balanceMinorUnits = paymentBalanceMinorUnits(bill);
+      if (!balanceMinorUnits) return res.status(409).json({ message: 'This invoice has no remaining balance' });
+      if (amountMinorUnits > balanceMinorUnits) {
+        return res.status(409).json({ message: 'Payment cannot exceed the remaining invoice balance' });
+      }
+
+      bill.payments.push({
+        receiptNumber: paymentReceiptNumber(),
+        amount: amountMinorUnits / 100,
+        method,
+        paymentDate,
+        reference,
+        recordedBy: req.auth.username,
+        requestId,
+        provider: 'manual',
+        status: 'Paid'
+      });
+      bill.paidAmount = ((toMinorUnits(bill.paidAmount) || 0) + amountMinorUnits) / 100;
+      synchronizeBillPaymentSummary(bill);
+      await bill.save();
+      res.status(201).json(bill);
+    } catch (error) {
+      res.status(error.name === 'VersionError' ? 409 : error.status || 400).json({
+        message: error.name === 'VersionError' ? 'This invoice changed while the payment was being recorded. Refresh and retry.' : error.message
+      });
+    }
+  });
+
+  app.post('/api/bills/:id/razorpay/order', requireResourcePermission('bills', 'update'), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid invoice ID' });
+    if (!isRazorpayConfigured()) return res.status(503).json({ message: 'Online payments are not configured. Contact your administrator.' });
+    const requestId = String(req.body?.requestId || '').trim();
+    if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/i.test(requestId)) {
+      return res.status(400).json({ message: 'A valid payment request ID is required' });
+    }
+    try {
+      const bill = await Bill.findById(req.params.id);
+      if (!bill) return res.status(404).json({ message: 'Invoice not found' });
+      const expiredOrdersChanged = expirePendingPaymentOrders(bill);
+      const amountMinorUnits = paymentBalanceMinorUnits(bill);
+      if (!amountMinorUnits) return res.status(409).json({ message: 'This invoice has no remaining balance' });
+
+      const requestedOrder = bill.payments.find((payment) => payment.requestId === requestId);
+      if (requestedOrder?.provider === 'razorpay' && requestedOrder.status === 'Pending' && requestedOrder.expiresAt > new Date()) {
+        return res.json({
+          keyId: razorpayKeyId,
+          orderId: requestedOrder.orderId,
+          amount: toMinorUnits(requestedOrder.amount),
+          currency: 'INR',
+          invoiceNumber: bill.invoiceNumber
+        });
+      }
+
+      const activeOrder = bill.payments.find((payment) => (
+        payment.provider === 'razorpay'
+        && payment.status === 'Pending'
+        && payment.expiresAt > new Date()
+      ));
+      if (activeOrder) {
+        if (toMinorUnits(activeOrder.amount) !== amountMinorUnits) {
+          return res.status(409).json({ message: 'A different online payment is already in progress for this invoice' });
+        }
+        return res.json({
+          keyId: razorpayKeyId,
+          orderId: activeOrder.orderId,
+          amount: amountMinorUnits,
+          currency: 'INR',
+          invoiceNumber: bill.invoiceNumber
+        });
+      }
+
+      if (expiredOrdersChanged) await bill.save();
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + paymentOrderLifetimeMs);
+      const order = await razorpayRequest('/orders', {
+        method: 'POST',
+        body: {
+          amount: amountMinorUnits,
+          currency: 'INR',
+          receipt: bill.invoiceNumber.slice(0, 40),
+          expire_by: Math.floor(expiresAt.getTime() / 1000),
+          notes: { billId: bill._id.toString() }
+        }
+      });
+      if (!order?.id || Number(order.amount) !== amountMinorUnits || order.currency !== 'INR') {
+        return res.status(503).json({ message: 'The payment provider returned an invalid order response' });
+      }
+
+      bill.payments.push({
+        receiptNumber: paymentReceiptNumber(),
+        amount: amountMinorUnits / 100,
+        method: 'Razorpay',
+        paymentDate: localDateKey(now),
+        recordedBy: req.auth.username,
+        requestId,
+        provider: 'razorpay',
+        status: 'Pending',
+        orderId: order.id,
+        expiresAt
+      });
+      await bill.save();
+      res.status(201).json({
+        keyId: razorpayKeyId,
+        orderId: order.id,
+        amount: amountMinorUnits,
+        currency: 'INR',
+        invoiceNumber: bill.invoiceNumber
+      });
+    } catch (error) {
+      console.error('Unable to create Razorpay order:', error.message);
+      res.status(error.status || (error.name === 'VersionError' ? 409 : 503)).json({
+        message: error.name === 'VersionError' ? 'This invoice changed while the payment order was being created. Refresh and retry.' : error.message
+      });
+    }
+  });
+
+  app.post('/api/bills/:id/razorpay/verify', requireResourcePermission('bills', 'update'), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ message: 'Invalid invoice ID' });
+    const { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
+    if (!verifyRazorpayPaymentSignature(orderId, paymentId, signature, razorpayKeySecret)) {
+      return res.status(400).json({ message: 'Payment signature could not be verified' });
+    }
+    try {
+      const bill = await Bill.findOne({ _id: req.params.id, 'payments.orderId': orderId }).select('_id').lean();
+      if (!bill) return res.status(404).json({ message: 'Payment order is not linked to this invoice' });
+      const gatewayPayment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}`);
+      if (gatewayPayment.order_id !== orderId) return res.status(400).json({ message: 'Payment does not match the invoice order' });
+      if (gatewayPayment.status !== 'captured') {
+        return res.status(409).json({ message: 'Payment has not been captured yet. Please wait for confirmation or retry.' });
+      }
+      const result = await applyCapturedPayment(req.params.id, orderId, gatewayPayment);
+      if (result.error) return res.status(result.status).json({ message: result.error });
+      res.json(result.bill);
+    } catch (error) {
+      console.error('Unable to verify Razorpay payment:', error.message);
+      res.status(error.status || (error.name === 'VersionError' ? 409 : 503)).json({
+        message: error.name === 'VersionError' ? 'Payment was received but the invoice changed. Refresh to see the latest payment status.' : error.message
+      });
+    }
+  });
+}
+
 function buildCrudRoutes(model, entityName, routeName) {
   app.get(`/api/${routeName}`, requireResourcePermission(routeName, 'read'), async (req, res) => {
     try {
@@ -1186,7 +1680,7 @@ function buildCrudRoutes(model, entityName, routeName) {
 
 buildCrudRoutes(Patient, 'Patient', 'patients');
 buildCrudRoutes(Appointment, 'Appointment', 'appointments');
-buildCrudRoutes(Bill, 'Bill', 'bills');
+buildBillRoutes();
 buildCrudRoutes(Medicine, 'Medicine', 'medicines');
 buildCrudRoutes(LabTest, 'Lab Test', 'lab-tests');
 buildCrudRoutes(Room, 'Room', 'rooms');
