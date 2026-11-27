@@ -23,7 +23,7 @@ dotenv.config({ path: path.join(projectRoot, '.env') });
 
 const app = express();
 const port = process.env.PORT || 3000;
-const mongoUri = process.env.MONGODB_URI || (process.env.NODE_ENV === 'production' ? '' : 'mongodb://127.0.0.1:27017/hospital');
+const mongoUri = process.env.MONGODB_URI;
 const allowedOrigins = new Set(
   (process.env.FRONTEND_URL || '')
     .split(',')
@@ -218,7 +218,7 @@ async function applyCapturedPayment(billId, orderId, gatewayPayment) {
 
 async function connectDatabase() {
   if (!mongoUri) {
-    throw new Error('MONGODB_URI must be set in production to a reachable MongoDB instance');
+    throw new Error('MONGODB_URI is required. Set it in backend/.env for local development or in the deployment environment.');
   }
   try {
     await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
