@@ -57,6 +57,26 @@ MongoDB must be available at `MONGODB_URI`. Install both application folders' de
 npm run install:all
 ```
 
+### Deploying on Render
+
+Create a Web Service with `backend` as its root directory. Set the build command to `npm install` and the start command to `npm start`; the backend package uses `server.js` as its entry point. Do not run `npm run build` or a watch command for this service. The included `render.yaml` declares these settings and the `/health` check.
+
+Configure these Render environment variables:
+
+* `MONGODB_URI`: the MongoDB Atlas connection string; percent-encode reserved characters in the username or password.
+* `SESSION_SECRET`: a private random value of at least 32 characters.
+* `FRONTEND_URL`: the exact Vercel site origin, including `https://` and no path. Multiple trusted origins can be comma-separated.
+* `ADMIN_PASSWORD`: set a strong password when the database has no administrator yet. Existing databases do not need this after initial setup.
+* `ADMIN_USERNAME`: optional; defaults to `admin`.
+
+Render supplies `PORT`. In Atlas, allow network connections from the Render service (or use an appropriately restricted network access policy). Keep credentials out of Git and rotate any credential that has been exposed.
+
+### Deploying on Vercel
+
+Create a Vercel project rooted at `frontend`, select Vite, use `npm run build` as the build command, and `dist` as the output directory. `frontend/vercel.json` configures these build settings and the React Router fallback.
+
+Set `VITE_API_URL` in Vercel to the deployed Render API origin, for example `https://<your-render-service>.onrender.com` (no trailing slash or `/api` suffix). This value is public configuration, not a secret. Set the matching Vercel origin in Render's `FRONTEND_URL`; the API allows credentialed requests only from those configured origins.
+
 For development, run the API and React client in separate terminals:
 
 ```powershell
@@ -66,14 +86,14 @@ npm run dev:frontend
 
 Open `http://localhost:5173`; Vite proxies `/api` and `/assets` to the Express server on port 3000.
 
-For a production-style run, build React and start Express:
+For a local single-server production-style smoke test, build React and start Express:
 
 ```powershell
 npm run build
 npm start
 ```
 
-Express serves the compiled client and preserves the existing `.html` page URLs as React route aliases. The legacy HTML files remain available as a fallback if the React build has not been generated.
+Express serves the compiled client and preserves the existing `.html` page URLs as React route aliases. The Render + Vercel deployment described above hosts the frontend and API separately.
 
 ---
 

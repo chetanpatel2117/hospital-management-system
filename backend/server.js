@@ -23,15 +23,38 @@ dotenv.config({ path: path.join(projectRoot, '.env') });
 
 const app = express();
 const port = process.env.PORT || 3000;
-const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/hospital';
+const mongoUri = process.env.MONGODB_URI || (process.env.NODE_ENV === 'production' ? '' : 'mongodb://127.0.0.1:27017/hospital');
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+);
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.add('http://localhost:5173');
+  allowedOrigins.add('http://127.0.0.1:5173');
+}
 if (process.env.NODE_ENV === 'production' && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
   throw new Error('SESSION_SECRET must contain at least 32 characters in production');
+}
+if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
+  throw new Error('FRONTEND_URL must contain the deployed frontend origin in production');
 }
 const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const scrypt = promisify(crypto.scrypt);
 const sessionDurationSeconds = 60 * 60 * 8;
 
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  credentials: true
+}));
+app.use((req, res, next) => {
+  const origin = req.get('origin');
+  if (origin && !allowedOrigins.has(origin)) {
+    return res.status(403).json({ message: 'Origin not allowed' });
+  }
+  next();
+});
 app.use(express.json({
   verify: (req, res, buffer) => {
     req.rawBody = Buffer.from(buffer);
@@ -93,8 +116,11 @@ async function razorpayRequest(pathname, { method = 'GET', body } = {}) {
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
     console.error('Razorpay request failed:', response.status, payload?.error?.code || 'provider_error');
-    const error = new Error('The payment provider could not complete the request. Please retry.');
-    error.status = response.status >= 500 ? 503 : 400;
+    const authenticationRejected = response.status === 401 || response.status === 403;
+    const error = new Error(authenticationRejected
+      ? 'Razorpay rejected the configured credentials. Confirm the Key ID and Key Secret are a matching pair from the same test account.'
+      : 'The payment provider could not complete the request. Please retry.');
+    error.status = authenticationRejected || response.status >= 500 ? 503 : 400;
     throw error;
   }
   return payload;
@@ -191,6 +217,9 @@ async function applyCapturedPayment(billId, orderId, gatewayPayment) {
 }
 
 async function connectDatabase() {
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI must be set in production to a reachable MongoDB instance');
+  }
   try {
     await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
     console.log('MongoDB connected successfully');
@@ -284,6 +313,14 @@ async function seedDemoData() {
   }
 }
 
+app.get('/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({
+    status: connected ? 'ok' : 'unavailable',
+    database: connected ? 'connected' : 'disconnected'
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Hospital API is running' });
 });
@@ -374,12 +411,14 @@ function requirePermission(module, action) {
 
 function setSessionCookie(res, token) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `hospital_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${sessionDurationSeconds}${secure}`);
+  const sameSite = process.env.NODE_ENV === 'production' ? 'None' : 'Strict';
+  res.setHeader('Set-Cookie', `hospital_session=${token}; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=${sessionDurationSeconds}${secure}`);
 }
 
 function clearSessionCookie(res) {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `hospital_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`);
+  const sameSite = process.env.NODE_ENV === 'production' ? 'None' : 'Strict';
+  res.setHeader('Set-Cookie', `hospital_session=; HttpOnly; SameSite=${sameSite}; Path=/; Max-Age=0${secure}`);
 }
 
 async function hashPassword(password) {
@@ -1833,8 +1872,8 @@ async function startServer() {
   try {
     await connectDatabase();
     await seedDemoData();
-    app.listen(port, () => {
-      console.log(`Hospital server running at http://localhost:${port}`);
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Hospital server listening on 0.0.0.0:${port}`);
     });
   } catch (error) {
     console.error('Hospital server startup failed:', error.message);
